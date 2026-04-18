@@ -39,8 +39,18 @@ final class PlayerStore: ObservableObject {
 
     // MARK: - At-bats
 
-    func recordAtBat(for playerID: Player.ID, outcome: AtBatOutcome, at date: Date = .now) {
-        atBats.append(AtBatEntry(playerID: playerID, date: date, outcome: outcome))
+    func recordAtBat(
+        for playerID: Player.ID,
+        outcome: AtBatOutcome,
+        contact: ContactQuality? = nil,
+        at date: Date = .now
+    ) {
+        atBats.append(AtBatEntry(
+            playerID: playerID,
+            date: date,
+            outcome: outcome,
+            contact: contact
+        ))
         scheduleSave()
     }
 

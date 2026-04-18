@@ -281,8 +281,36 @@ struct RecentAtBatRow: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            if let contact = entry.contact {
+                ContactChip(quality: contact)
+            }
         }
         .padding(.vertical, 2)
+    }
+}
+
+struct ContactChip: View {
+    let quality: ContactQuality
+
+    var body: some View {
+        Text(quality.label)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                Capsule().fill(tint.opacity(0.15))
+            )
+            .overlay(
+                Capsule().stroke(tint.opacity(0.4), lineWidth: 0.5)
+            )
+    }
+
+    private var tint: Color {
+        switch quality {
+        case .strong: return .green
+        case .weak: return .orange
+        }
     }
 }
 
@@ -335,36 +363,90 @@ struct AtBatPad: View {
     let date: Date
     @ObservedObject var history: UndoHistory
 
+    @State private var contact: ContactQuality? = nil
+
     private let outcomes: [AtBatOutcome] = [.single, .double, .triple, .homeRun, .walk, .strikeout, .out, .rbi]
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 10) {
-            ForEach(outcomes) { outcome in
-                Button {
-                    record(outcome)
-                } label: {
-                    Text(outcome.label)
-                        .font(.system(.headline, design: .rounded))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(.tint.opacity(0.15))
-                        )
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text("Contact")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                ContactToggle(
+                    title: "Strong",
+                    isOn: contact == .strong,
+                    tint: .green
+                ) { toggle(.strong) }
+                ContactToggle(
+                    title: "Weak",
+                    isOn: contact == .weak,
+                    tint: .orange
+                ) { toggle(.weak) }
+            }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 10) {
+                ForEach(outcomes) { outcome in
+                    Button {
+                        record(outcome)
+                    } label: {
+                        Text(outcome.label)
+                            .font(.system(.headline, design: .rounded))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(.tint.opacity(0.15))
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
         .padding(.vertical, 4)
     }
 
+    private func toggle(_ quality: ContactQuality) {
+        contact = contact == quality ? nil : quality
+    }
+
     private func record(_ outcome: AtBatOutcome) {
-        let entry = AtBatEntry(playerID: playerID, date: date, outcome: outcome)
+        let entry = AtBatEntry(
+            playerID: playerID,
+            date: date,
+            outcome: outcome,
+            contact: contact
+        )
         store.atBats.append(entry)
         history.register(
             undo: { [weak store] in store?.deleteAtBat(id: entry.id) },
             redo: { [weak store] in store?.atBats.append(entry) }
         )
+    }
+}
+
+struct ContactToggle: View {
+    let title: String
+    let isOn: Bool
+    let tint: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(isOn ? .white : tint)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule().fill(isOn ? tint : tint.opacity(0.15))
+                )
+                .overlay(
+                    Capsule().stroke(tint, lineWidth: isOn ? 0 : 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -389,6 +471,9 @@ struct DayLogRow: View {
                     Text(entry.date, style: .time)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                    if let contact = entry.contact {
+                        ContactChip(quality: contact)
+                    }
                     Spacer()
                     Button(role: .destructive) {
                         remove(entry)
