@@ -56,9 +56,11 @@ A user LaunchAgent (`com.divinedavis.baseballstattracker.testflight`) fires ever
 
 ### One-time setup
 
-1. **Create the app record in App Store Connect** with bundle ID `com.divinedavis.BaseballStatTracker`. Grab the numeric App ID from the URL after creating it.
+The only click-in-a-web-UI step is creating the ASC API key — API keys can't create themselves. Everything after that is automated by `scripts/bootstrap-app.py`.
 
-2. **Create an App Store Connect API key** (Users and Access → Integrations → App Store Connect API, role: App Manager). Download the `.p8`.
+1. **Create (or reuse) an App Store Connect API key.** If you already have one from another app in the same team (Clock-In, Hidden Gems, ShypQuick), **reuse it** — one key works across all apps on the team.
+
+   Otherwise: Users and Access → Integrations → App Store Connect API → **"+"**, role **Admin** (needed for app creation; App Manager can only manage existing apps). Download the `.p8` once — Apple won't show it again.
 
    ```bash
    mkdir -p ~/.appstoreconnect/private_keys
@@ -66,14 +68,27 @@ A user LaunchAgent (`com.divinedavis.baseballstattracker.testflight`) fires ever
    chmod 600 ~/.appstoreconnect/private_keys/AuthKey_XXXXXXXXXX.p8
    ```
 
-3. **Fill in credentials**:
+2. **Fill in the credentials file** (leave `ASC_APP_ID` as the placeholder — the bootstrap script will write it in):
 
    ```bash
    cp scripts/asc-config.env.example scripts/asc-config.env
-   # edit scripts/asc-config.env — set ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH,
-   # ASC_TEAM_ID (CG89RY4W6R), ASC_APP_ID (the numeric id from step 1),
-   # ASC_BUNDLE_ID=com.divinedavis.BaseballStatTracker
+   # edit scripts/asc-config.env — set:
+   #   ASC_KEY_ID        (10-char key id)
+   #   ASC_ISSUER_ID     (uuid from the top of the ASC API keys page)
+   #   ASC_KEY_PATH      (~/.appstoreconnect/private_keys/AuthKey_XXXXXXXXXX.p8)
+   #   ASC_TEAM_ID       (CG89RY4W6R)
+   #   ASC_BUNDLE_ID=com.divinedavis.BaseballStatTracker
+   #   ASC_APP_ID        (leave as 0000000000 — bootstrap-app.py fills it in)
    ```
+
+3. **Bootstrap the bundle ID and app record** (one command, no clicking):
+
+   ```bash
+   pip3 install --user 'pyjwt[crypto]'    # once, if you haven't
+   scripts/bootstrap-app.py
+   ```
+
+   This registers `com.divinedavis.BaseballStatTracker` in the Developer portal (if missing), creates the App Store Connect app record (if missing), and stamps the resulting numeric `ASC_APP_ID` into `scripts/asc-config.env`. Re-runnable — it's a no-op when everything already exists. If the name `Baseball Stat Tracker` is already taken on the App Store, pass `--name "Baseball Stats Tracker"` (or similar).
 
 4. **Install the hourly LaunchAgent**:
 
