@@ -29,8 +29,6 @@ struct AuthView: View {
             EmailAuthSheet()
                 .environmentObject(auth)
                 .environment(\.colorScheme, .light)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
                 .presentationBackground {
                     Rectangle()
                         .fill(.ultraThinMaterial)
@@ -200,6 +198,7 @@ private struct EmailAuthSheet: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var displayName = ""
+    @State private var detent: PresentationDetent = .medium
 
     private var passwordsMatch: Bool {
         mode == .signIn || (password == confirmPassword && !confirmPassword.isEmpty)
@@ -214,9 +213,10 @@ private struct EmailAuthSheet: View {
                         Text("Sign Up").tag(Mode.signUp)
                     }
                     .pickerStyle(.segmented)
-                    .onChange(of: mode) { _, _ in
+                    .onChange(of: mode) { _, newMode in
                         auth.clearError()
                         confirmPassword = ""
+                        withAnimation { detent = newMode == .signUp ? .large : .medium }
                     }
                 }
                 .listRowBackground(Color.white.opacity(0.35))
@@ -289,6 +289,8 @@ private struct EmailAuthSheet: View {
                 .padding(.bottom, 12)
             }
         }
+        .presentationDetents([.medium, .large], selection: $detent)
+        .presentationDragIndicator(.visible)
     }
 
     private var canSubmit: Bool {
