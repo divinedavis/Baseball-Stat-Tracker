@@ -7,7 +7,6 @@ struct PlayerDetailView: View {
     let player: Player
 
     @State private var entryDate: Date = .now
-    @State private var showingResetConfirm = false
 
     private var current: Player {
         store.players.first(where: { $0.id == player.id }) ?? player
@@ -65,7 +64,7 @@ struct PlayerDetailView: View {
 
                 Menu {
                     Button(role: .destructive) {
-                        showingResetConfirm = true
+                        resetAll()
                     } label: {
                         Label("Reset all stats", systemImage: "trash")
                     }
@@ -73,16 +72,6 @@ struct PlayerDetailView: View {
                     Image(systemName: "ellipsis.circle")
                 }
             }
-        }
-        .confirmationDialog(
-            "Reset all stats for \(current.name)?",
-            isPresented: $showingResetConfirm,
-            titleVisibility: .visible
-        ) {
-            Button("Reset", role: .destructive) { resetAll() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This removes every at-bat entry for \(current.name). Undoable.")
         }
     }
 
