@@ -25,7 +25,25 @@ struct PlayerRow: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 4)
+    }
+}
+
+struct PlayerCard: View {
+    let player: Player
+
+    var body: some View {
+        PlayerRow(player: player)
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(.secondarySystemGroupedBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color(.separator).opacity(0.5), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 

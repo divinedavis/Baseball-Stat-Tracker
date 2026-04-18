@@ -7,7 +7,7 @@ struct RootView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            Group {
                 if store.players.isEmpty {
                     ContentUnavailableView(
                         "No players yet",
@@ -15,12 +15,26 @@ struct RootView: View {
                         description: Text("Tap + to add your first player.")
                     )
                 } else {
-                    ForEach(store.players) { player in
-                        NavigationLink(value: player.id) {
-                            PlayerRow(player: player)
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(store.players) { player in
+                                NavigationLink(value: player.id) {
+                                    PlayerCard(player: player)
+                                }
+                                .buttonStyle(.plain)
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        delete(player)
+                                    } label: {
+                                        Label("Delete player", systemImage: "trash")
+                                    }
+                                }
+                            }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                     }
-                    .onDelete(perform: store.delete)
+                    .background(Color(.systemGroupedBackground))
                 }
             }
             .navigationTitle("Roster")
@@ -61,6 +75,11 @@ struct RootView: View {
                 AddPlayerView()
             }
         }
+    }
+
+    private func delete(_ player: Player) {
+        guard let idx = store.players.firstIndex(where: { $0.id == player.id }) else { return }
+        store.delete(at: IndexSet(integer: idx))
     }
 }
 
