@@ -4,6 +4,13 @@ struct PlayerRow: View {
     @EnvironmentObject private var store: PlayerStore
     let player: Player
 
+    private var subtitle: String {
+        var parts: [String] = [player.position]
+        if let age = player.age, age > 0 { parts.append("\(age) yo") }
+        if let team = player.team, !team.isEmpty { parts.append(team) }
+        return parts.joined(separator: " • ")
+    }
+
     var body: some View {
         let stats = store.stats(for: player.id)
         HStack(spacing: 12) {
@@ -11,7 +18,7 @@ struct PlayerRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(player.name)
                     .font(.headline)
-                Text(player.position)
+                Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

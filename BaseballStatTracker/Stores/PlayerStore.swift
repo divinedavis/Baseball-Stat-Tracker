@@ -5,16 +5,32 @@ import Combine
 final class PlayerStore: ObservableObject {
     @Published var players: [Player] = []
     @Published var atBats: [AtBatEntry] = []
+    @Published var teams: [String] = []
 
     private let playersURL: URL
     private let atBatsURL: URL
+    private let teamsURL: URL
     private var saveTask: Task<Void, Never>?
 
     init(filenamePrefix: String = "bst") {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         self.playersURL = dir.appendingPathComponent("\(filenamePrefix)-players.json")
         self.atBatsURL = dir.appendingPathComponent("\(filenamePrefix)-atbats.json")
+        self.teamsURL = dir.appendingPathComponent("\(filenamePrefix)-teams.json")
         load()
+    }
+
+    /// Remember a team name so it shows up in the picker next time.
+    /// Case-insensitive dedupe against existing entries; preserves the
+    /// first-seen capitalization ("Yankees" wins over later "yankees").
+    func rememberTeam(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if !teams.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) {
+            teams.append(trimmed)
+            teams.sort { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+            scheduleSave()
+        }
     }
 
     // MARK: - Players
@@ -103,6 +119,16 @@ final class PlayerStore: ObservableObject {
            let decoded = try? jsonDecoder().decode([AtBatEntry].self, from: data) {
             atBats = decoded
         }
+        if let data = try? Data(contentsOf: teamsURL),
+           let decoded = try? JSONDecoder().decode([String].self, from: data) {
+            teams = decoded
+        }
+        // Back-fill teams from any existing players that pre-date the teams store.
+        for player in players {
+            if let t = player.team, !t.isEmpty {
+                rememberTeam(t)
+            }
+        }
     }
 
     private func scheduleSave() {
@@ -119,6 +145,9 @@ final class PlayerStore: ObservableObject {
         }
         if let data = try? jsonEncoder().encode(atBats) {
             try? data.write(to: atBatsURL, options: [.atomic])
+        }
+        if let data = try? JSONEncoder().encode(teams) {
+            try? data.write(to: teamsURL, options: [.atomic])
         }
     }
 
