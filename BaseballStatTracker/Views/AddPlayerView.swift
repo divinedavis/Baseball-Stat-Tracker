@@ -15,8 +15,19 @@ struct AddPlayerView: View {
             Form {
                 Section("Player") {
                     TextField("Name", text: $name)
-                    Stepper(value: $number, in: 0...99) {
-                        Text("Number: \(number)")
+                    HStack {
+                        Text("Number")
+                        Spacer()
+                        TextField("0", value: $number, format: .number)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 80)
+                            .onChange(of: number) { _, newValue in
+                                if newValue < 0 { number = 0 }
+                                if newValue > 99 { number = 99 }
+                            }
+                        Stepper("", value: $number, in: 0...99)
+                            .labelsHidden()
                     }
                     Picker("Position", selection: $position) {
                         ForEach(positions, id: \.self) { Text($0) }
