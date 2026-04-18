@@ -160,13 +160,31 @@ def create_app(token: str, bundle_id_resource: str, name: str, sku: str, locale:
     # *reverse-DNS identifier* (com.example.App), not the resource id that
     # came back from /v1/bundleIds. This is documented but easy to miss.
     status, d = api("POST", "/v1/apps", token, body)
+    if status == 403 and "CREATE" in json.dumps(d):
+        # Apple-wide limitation: POST /v1/apps returns FORBIDDEN regardless of
+        # API key role. Only app creation in the web UI works. Degrade into a
+        # guided manual step; a subsequent script re-run will discover the app.
+        sys.stderr.write(
+            "\n⚠ Apple does not allow creating App Store Connect app records via the API.\n"
+            "  (POST /v1/apps returns 403 'resource apps does not allow CREATE' for every role.)\n\n"
+            "Do this once in the web UI, then re-run this script to finish the bootstrap:\n\n"
+            "  1. https://appstoreconnect.apple.com/apps → + → New App\n"
+            "  2. Platforms: iOS\n"
+            f"  3. Name: {name!r} (must be globally unique — try a variant if taken)\n"
+            "  4. Primary Language: English (U.S.)\n"
+            f"  5. Bundle ID: {bundle_id_resource} (now available in the dropdown — we just registered it)\n"
+            f"  6. SKU: {sku}\n"
+            "  7. User Access: Full Access\n"
+            "  8. Create.\n\n"
+            "Then: scripts/bootstrap-app.py\n"
+        )
+        sys.exit(2)
     if status not in (200, 201):
         die(
             "app creation failed: "
             f"{status} {json.dumps(d)[:1200]}\n"
             "Common causes:\n"
             "  - The app Name is already taken on the App Store (must be globally unique).\n"
-            "  - The ASC API key role is below 'Admin' and your account requires Admin for app creation.\n"
             "  - The bundle identifier isn't registered yet (re-run to register it first)."
         )
     return d["data"]

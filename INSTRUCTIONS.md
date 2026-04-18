@@ -81,14 +81,16 @@ The only click-in-a-web-UI step is creating the ASC API key — API keys can't c
    #   ASC_APP_ID        (leave as 0000000000 — bootstrap-app.py fills it in)
    ```
 
-3. **Bootstrap the bundle ID and app record** (one command, no clicking):
+3. **Bootstrap the bundle ID and app record**:
 
    ```bash
    pip3 install --user 'pyjwt[crypto]'    # once, if you haven't
    scripts/bootstrap-app.py
    ```
 
-   This registers `com.divinedavis.BaseballStatTracker` in the Developer portal (if missing), creates the App Store Connect app record (if missing), and stamps the resulting numeric `ASC_APP_ID` into `scripts/asc-config.env`. Re-runnable — it's a no-op when everything already exists. If the name `Baseball Stat Tracker` is already taken on the App Store, pass `--name "Baseball Stats Tracker"` (or similar).
+   This registers `com.divinedavis.BaseballStatTracker` in the Developer portal (fully automated) and stamps the resulting numeric `ASC_APP_ID` into `scripts/asc-config.env` once the app record exists. Re-runnable — it no-ops when everything's already there.
+
+   **⚠ Apple limitation:** `POST /v1/apps` is not available on the App Store Connect API (returns `403 FORBIDDEN_ERROR` regardless of API key role). So the bootstrap script automates the bundle ID, but the app record itself has to be created in the web UI once. The script detects this case and prints exact step-by-step instructions when it happens. After clicking Create in the web UI, re-run `scripts/bootstrap-app.py` — it'll find the app and finish the wiring. If the name is taken on the App Store, pass `--name "Baseball Stats Tracker"` or similar on the retry.
 
 4. **Install the hourly LaunchAgent**:
 
