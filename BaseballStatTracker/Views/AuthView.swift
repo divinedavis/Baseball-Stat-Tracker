@@ -28,8 +28,10 @@ struct AuthView: View {
         .sheet(isPresented: $showEmailSheet) {
             EmailAuthSheet()
                 .environmentObject(auth)
-                .presentationDetents([.large])
+                .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+                .presentationBackground(.ultraThinMaterial)
+                .presentationCornerRadius(28)
         }
     }
 
@@ -211,6 +213,7 @@ private struct EmailAuthSheet: View {
                         confirmPassword = ""
                     }
                 }
+                .listRowBackground(Color.white.opacity(0.35))
 
                 Section("Account") {
                     if mode == .signUp {
@@ -230,6 +233,7 @@ private struct EmailAuthSheet: View {
                             .textContentType(.newPassword)
                     }
                 }
+                .listRowBackground(Color.white.opacity(0.35))
 
                 if mode == .signUp,
                    !confirmPassword.isEmpty,
@@ -239,24 +243,44 @@ private struct EmailAuthSheet: View {
                             .foregroundStyle(.red)
                             .font(.footnote)
                     }
+                    .listRowBackground(Color.clear)
                 } else if let err = auth.lastError {
                     Section {
                         Text(err).foregroundStyle(.red).font(.footnote)
                     }
-                }
-
-                Section {
-                    Button(mode == .signIn ? "Sign In" : "Create Account") { submit() }
-                        .disabled(!canSubmit)
-                        .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle(mode == .signIn ? "Sign In" : "Create Account")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+            }
+            .safeAreaInset(edge: .bottom) {
+                Button {
+                    submit()
+                } label: {
+                    Text(mode == .signIn ? "Sign In" : "Create Account")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .foregroundStyle(.white)
+                        .background(
+                            Capsule().fill(
+                                LinearGradient(
+                                    colors: [.blue, .indigo],
+                                    startPoint: .leading, endPoint: .trailing
+                                )
+                            )
+                        )
+                }
+                .disabled(!canSubmit)
+                .opacity(canSubmit ? 1 : 0.5)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
             }
         }
     }
