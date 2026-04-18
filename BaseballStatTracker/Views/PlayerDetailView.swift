@@ -2,54 +2,140 @@ import SwiftUI
 
 struct PlayerDetailView: View {
     @EnvironmentObject private var store: PlayerStore
+    @StateObject private var history = UndoHistory()
+
     let player: Player
+
+    @State private var entryDate: Date = .now
+    @State private var showingResetConfirm = false
 
     private var current: Player {
         store.players.first(where: { $0.id == player.id }) ?? player
     }
 
+    private var stats: PlayerStats { store.stats(for: current.id) }
+    private var activeDays: [Date] { store.activeDays(for: current.id) }
+
     var body: some View {
         List {
             Section("Slash line") {
-                StatGrid(player: current)
+                StatGrid(stats: stats)
             }
             Section("Counting stats") {
-                CountingStatsGrid(player: current)
+                CountingStatsGrid(stats: stats)
             }
-            Section("Record an at-bat") {
-                AtBatPad(playerID: current.id)
+            Section {
+                DatePicker("Date", selection: $entryDate, displayedComponents: [.date, .hourAndMinute])
+                AtBatPad(playerID: current.id, date: entryDate, history: history)
+            } header: {
+                Text("Record an at-bat")
+            } footer: {
+                Text("Each tap creates a dated entry. Use Undo to reverse.")
+                    .font(.caption)
+            }
+            if !activeDays.isEmpty {
+                Section("Game log") {
+                    ForEach(activeDays, id: \.self) { day in
+                        DayLogRow(
+                            playerID: current.id,
+                            day: day,
+                            history: history
+                        )
+                    }
+                }
             }
         }
         .navigationTitle(current.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button {
+                    history.undo()
+                } label: {
+                    Image(systemName: "arrow.uturn.backward")
+                }
+                .disabled(!history.canUndo)
+
+                Button {
+                    history.redo()
+                } label: {
+                    Image(systemName: "arrow.uturn.forward")
+                }
+                .disabled(!history.canRedo)
+
+                Menu {
+                    Button(role: .destructive) {
+                        showingResetConfirm = true
+                    } label: {
+                        Label("Reset all stats", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+            }
+        }
+        .confirmationDialog(
+            "Reset all stats for \(current.name)?",
+            isPresented: $showingResetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Reset", role: .destructive) { resetAll() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes every at-bat entry for \(current.name). Undoable.")
+        }
+    }
+
+    private func resetAll() {
+        let removed = store.entries(for: current.id)
+        guard !removed.isEmpty else { return }
+        for entry in removed {
+            store.deleteAtBat(id: entry.id)
+        }
+        history.register(
+            undo: { [weak store] in
+                guard let store else { return }
+                for entry in removed {
+                    store.atBats.append(entry)
+                }
+            },
+            redo: { [weak store] in
+                guard let store else { return }
+                for entry in removed {
+                    store.deleteAtBat(id: entry.id)
+                }
+            }
+        )
     }
 }
 
+// MARK: - Stat grids
+
 struct StatGrid: View {
-    let player: Player
+    let stats: PlayerStats
     var body: some View {
         HStack(spacing: 16) {
-            StatCell(label: "AVG", value: StatFormatter.avg(player.battingAverage))
-            StatCell(label: "OBP", value: StatFormatter.avg(player.onBasePercentage))
-            StatCell(label: "SLG", value: StatFormatter.avg(player.sluggingPercentage))
-            StatCell(label: "OPS", value: StatFormatter.avg(player.ops))
+            StatCell(label: "AVG", value: StatFormatter.avg(stats.battingAverage))
+            StatCell(label: "OBP", value: StatFormatter.avg(stats.onBasePercentage))
+            StatCell(label: "SLG", value: StatFormatter.avg(stats.sluggingPercentage))
+            StatCell(label: "OPS", value: StatFormatter.avg(stats.ops))
         }
         .padding(.vertical, 4)
     }
 }
 
 struct CountingStatsGrid: View {
-    let player: Player
+    let stats: PlayerStats
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
-            StatCell(label: "AB", value: "\(player.atBats)")
-            StatCell(label: "H", value: "\(player.hits)")
-            StatCell(label: "2B", value: "\(player.doubles)")
-            StatCell(label: "3B", value: "\(player.triples)")
-            StatCell(label: "HR", value: "\(player.homeRuns)")
-            StatCell(label: "RBI", value: "\(player.runsBattedIn)")
-            StatCell(label: "BB", value: "\(player.walks)")
-            StatCell(label: "K", value: "\(player.strikeouts)")
+            StatCell(label: "AB", value: "\(stats.atBats)")
+            StatCell(label: "H", value: "\(stats.hits)")
+            StatCell(label: "2B", value: "\(stats.doubles)")
+            StatCell(label: "3B", value: "\(stats.triples)")
+            StatCell(label: "HR", value: "\(stats.homeRuns)")
+            StatCell(label: "RBI", value: "\(stats.runsBattedIn)")
+            StatCell(label: "BB", value: "\(stats.walks)")
+            StatCell(label: "K", value: "\(stats.strikeouts)")
         }
         .padding(.vertical, 4)
     }
@@ -71,9 +157,13 @@ struct StatCell: View {
     }
 }
 
+// MARK: - At-bat pad
+
 struct AtBatPad: View {
     @EnvironmentObject private var store: PlayerStore
     let playerID: Player.ID
+    let date: Date
+    @ObservedObject var history: UndoHistory
 
     private let outcomes: [AtBatOutcome] = [.single, .double, .triple, .homeRun, .walk, .strikeout, .out, .rbi]
 
@@ -81,7 +171,7 @@ struct AtBatPad: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 10) {
             ForEach(outcomes) { outcome in
                 Button {
-                    store.recordAtBat(for: playerID, outcome: outcome)
+                    record(outcome)
                 } label: {
                     Text(outcome.label)
                         .font(.system(.headline, design: .rounded))
@@ -96,5 +186,68 @@ struct AtBatPad: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private func record(_ outcome: AtBatOutcome) {
+        let entry = AtBatEntry(playerID: playerID, date: date, outcome: outcome)
+        store.atBats.append(entry)
+        history.register(
+            undo: { [weak store] in store?.deleteAtBat(id: entry.id) },
+            redo: { [weak store] in store?.atBats.append(entry) }
+        )
+    }
+}
+
+// MARK: - Game log row
+
+struct DayLogRow: View {
+    @EnvironmentObject private var store: PlayerStore
+    let playerID: Player.ID
+    let day: Date
+    @ObservedObject var history: UndoHistory
+
+    private var entries: [AtBatEntry] { store.entries(for: playerID, on: day) }
+    private var dayStats: PlayerStats { store.stats(for: playerID, on: day) }
+
+    var body: some View {
+        DisclosureGroup {
+            ForEach(entries) { entry in
+                HStack {
+                    Text(entry.outcome.label)
+                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                        .frame(minWidth: 44, alignment: .leading)
+                    Text(entry.date, style: .time)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button(role: .destructive) {
+                        remove(entry)
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                }
+            }
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(day, format: .dateTime.weekday(.wide).month().day())
+                        .font(.subheadline.weight(.semibold))
+                    Text("\(entries.count) AB • \(StatFormatter.avg(dayStats.battingAverage)) AVG")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+        }
+    }
+
+    private func remove(_ entry: AtBatEntry) {
+        store.deleteAtBat(id: entry.id)
+        history.register(
+            undo: { [weak store] in store?.atBats.append(entry) },
+            redo: { [weak store] in store?.deleteAtBat(id: entry.id) }
+        )
     }
 }

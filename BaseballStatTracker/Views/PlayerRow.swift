@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct PlayerRow: View {
+    @EnvironmentObject private var store: PlayerStore
     let player: Player
 
     var body: some View {
+        let stats = store.stats(for: player.id)
         HStack(spacing: 12) {
             NumberBadge(number: player.number)
             VStack(alignment: .leading, spacing: 2) {
@@ -15,7 +17,7 @@ struct PlayerRow: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                Text(StatFormatter.avg(player.battingAverage))
+                Text(StatFormatter.avg(stats.battingAverage))
                     .font(.system(.body, design: .rounded).monospacedDigit())
                     .fontWeight(.semibold)
                 Text("AVG")

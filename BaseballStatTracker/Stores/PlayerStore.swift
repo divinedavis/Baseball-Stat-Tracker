@@ -4,19 +4,20 @@ import Combine
 @MainActor
 final class PlayerStore: ObservableObject {
     @Published var players: [Player] = []
+    @Published var atBats: [AtBatEntry] = []
 
-    private let storageURL: URL
+    private let playersURL: URL
+    private let atBatsURL: URL
     private var saveTask: Task<Void, Never>?
 
-    init(filename: String = "players.json") {
+    init(filenamePrefix: String = "bst") {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        self.storageURL = dir.appendingPathComponent(filename)
+        self.playersURL = dir.appendingPathComponent("\(filenamePrefix)-players.json")
+        self.atBatsURL = dir.appendingPathComponent("\(filenamePrefix)-atbats.json")
         load()
-        if players.isEmpty {
-            players = Player.sampleRoster
-            scheduleSave()
-        }
     }
+
+    // MARK: - Players
 
     func addPlayer(_ player: Player) {
         players.append(player)
@@ -30,41 +31,67 @@ final class PlayerStore: ObservableObject {
     }
 
     func delete(at offsets: IndexSet) {
+        let removed = offsets.map { players[$0].id }
         players.remove(atOffsets: offsets)
+        atBats.removeAll { removed.contains($0.playerID) }
         scheduleSave()
     }
 
-    func recordAtBat(for playerID: Player.ID, outcome: AtBatOutcome) {
-        guard let idx = players.firstIndex(where: { $0.id == playerID }) else { return }
-        var p = players[idx]
-        switch outcome {
-        case .single:
-            p.atBats += 1; p.hits += 1
-        case .double:
-            p.atBats += 1; p.hits += 1; p.doubles += 1
-        case .triple:
-            p.atBats += 1; p.hits += 1; p.triples += 1
-        case .homeRun:
-            p.atBats += 1; p.hits += 1; p.homeRuns += 1; p.runsBattedIn += 1
-        case .walk:
-            p.walks += 1
-        case .strikeout:
-            p.atBats += 1; p.strikeouts += 1
-        case .out:
-            p.atBats += 1
-        case .rbi:
-            p.runsBattedIn += 1
-        }
-        players[idx] = p
+    // MARK: - At-bats
+
+    func recordAtBat(for playerID: Player.ID, outcome: AtBatOutcome, at date: Date = .now) {
+        atBats.append(AtBatEntry(playerID: playerID, date: date, outcome: outcome))
         scheduleSave()
+    }
+
+    func deleteAtBat(id: AtBatEntry.ID) {
+        atBats.removeAll { $0.id == id }
+        scheduleSave()
+    }
+
+    func entries(for playerID: Player.ID) -> [AtBatEntry] {
+        atBats
+            .filter { $0.playerID == playerID }
+            .sorted { $0.date > $1.date }
+    }
+
+    func entries(for playerID: Player.ID, on day: Date) -> [AtBatEntry] {
+        let cal = Calendar.current
+        return atBats
+            .filter { $0.playerID == playerID && cal.isDate($0.date, inSameDayAs: day) }
+            .sorted { $0.date > $1.date }
+    }
+
+    func stats(for playerID: Player.ID) -> PlayerStats {
+        PlayerStats(entries: atBats.lazy.filter { $0.playerID == playerID })
+    }
+
+    func stats(for playerID: Player.ID, on day: Date) -> PlayerStats {
+        let cal = Calendar.current
+        return PlayerStats(entries: atBats.lazy.filter {
+            $0.playerID == playerID && cal.isDate($0.date, inSameDayAs: day)
+        })
+    }
+
+    /// Days on which this player has at least one entry, sorted most-recent first.
+    func activeDays(for playerID: Player.ID) -> [Date] {
+        let cal = Calendar.current
+        let starts = atBats
+            .filter { $0.playerID == playerID }
+            .map { cal.startOfDay(for: $0.date) }
+        return Array(Set(starts)).sorted(by: >)
     }
 
     // MARK: - Persistence
 
     private func load() {
-        guard let data = try? Data(contentsOf: storageURL) else { return }
-        if let decoded = try? JSONDecoder().decode([Player].self, from: data) {
+        if let data = try? Data(contentsOf: playersURL),
+           let decoded = try? JSONDecoder().decode([Player].self, from: data) {
             players = decoded
+        }
+        if let data = try? Data(contentsOf: atBatsURL),
+           let decoded = try? jsonDecoder().decode([AtBatEntry].self, from: data) {
+            atBats = decoded
         }
     }
 
@@ -77,12 +104,28 @@ final class PlayerStore: ObservableObject {
     }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(players) else { return }
-        try? data.write(to: storageURL, options: [.atomic])
+        if let data = try? JSONEncoder().encode(players) {
+            try? data.write(to: playersURL, options: [.atomic])
+        }
+        if let data = try? jsonEncoder().encode(atBats) {
+            try? data.write(to: atBatsURL, options: [.atomic])
+        }
+    }
+
+    private func jsonEncoder() -> JSONEncoder {
+        let e = JSONEncoder()
+        e.dateEncodingStrategy = .iso8601
+        return e
+    }
+
+    private func jsonDecoder() -> JSONDecoder {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        return d
     }
 }
 
-enum AtBatOutcome: String, CaseIterable, Identifiable {
+enum AtBatOutcome: String, CaseIterable, Identifiable, Codable {
     case single, double, triple, homeRun, walk, strikeout, out, rbi
     var id: String { rawValue }
 
@@ -98,12 +141,11 @@ enum AtBatOutcome: String, CaseIterable, Identifiable {
         case .rbi: return "+RBI"
         }
     }
-}
 
-extension Player {
-    static let sampleRoster: [Player] = [
-        Player(name: "Sample Slugger", number: 24, position: "CF",
-               atBats: 120, hits: 42, doubles: 9, triples: 1, homeRuns: 7,
-               runsBattedIn: 28, walks: 18, strikeouts: 26)
-    ]
+    var isHit: Bool {
+        switch self {
+        case .single, .double, .triple, .homeRun: return true
+        default: return false
+        }
+    }
 }
