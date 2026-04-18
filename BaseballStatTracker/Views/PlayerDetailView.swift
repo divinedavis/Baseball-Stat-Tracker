@@ -14,6 +14,9 @@ struct PlayerDetailView: View {
 
     private var stats: PlayerStats { store.stats(for: current.id) }
     private var activeDays: [Date] { store.activeDays(for: current.id) }
+    private var recentEntries: [AtBatEntry] {
+        Array(store.entries(for: current.id).prefix(5))
+    }
 
     var body: some View {
         List {
@@ -22,6 +25,13 @@ struct PlayerDetailView: View {
             }
             Section("Counting stats") {
                 CountingStatsGrid(stats: stats)
+            }
+            if !recentEntries.isEmpty {
+                Section("Last 5 at-bats") {
+                    ForEach(recentEntries) { entry in
+                        RecentAtBatRow(entry: entry)
+                    }
+                }
             }
             Section {
                 DatePicker("Date", selection: $entryDate, displayedComponents: [.date, .hourAndMinute])
@@ -127,6 +137,50 @@ struct CountingStatsGrid: View {
             StatCell(label: "K", value: "\(stats.strikeouts)")
         }
         .padding(.vertical, 4)
+    }
+}
+
+struct RecentAtBatRow: View {
+    let entry: AtBatEntry
+
+    var body: some View {
+        HStack(spacing: 12) {
+            OutcomeBadge(outcome: entry.outcome)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.date, format: .relative(presentation: .named))
+                    .font(.subheadline.weight(.medium))
+                Text(entry.date, format: .dateTime.month(.abbreviated).day().hour().minute())
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+struct OutcomeBadge: View {
+    let outcome: AtBatOutcome
+
+    var body: some View {
+        Text(outcome.label)
+            .font(.system(.subheadline, design: .rounded).weight(.bold))
+            .foregroundStyle(tint)
+            .frame(minWidth: 46, minHeight: 28)
+            .padding(.horizontal, 8)
+            .background(
+                Capsule().fill(tint.opacity(0.18))
+            )
+    }
+
+    private var tint: Color {
+        switch outcome {
+        case .single, .double, .triple: return .green
+        case .homeRun: return .orange
+        case .walk, .rbi: return .blue
+        case .strikeout: return .red
+        case .out: return .gray
+        }
     }
 }
 
