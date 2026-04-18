@@ -37,7 +37,9 @@ struct RootView: View {
                         if let user = auth.currentUser {
                             Section {
                                 Text(user.displayName)
-                                Text(user.email).font(.caption)
+                                if let email = user.email {
+                                    Text(email).font(.caption)
+                                }
                             }
                         }
                         Button(role: .destructive) {

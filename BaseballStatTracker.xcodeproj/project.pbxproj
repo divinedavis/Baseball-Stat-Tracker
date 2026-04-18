@@ -24,6 +24,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0A8FF4077F854300A78C68AC /* BaseballStatTracker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BaseballStatTracker.entitlements; sourceTree = "<group>"; };
 		0B153D5431BA4783907DCD64 /* PlayerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerStore.swift; sourceTree = "<group>"; };
 		106454408A40E260FC97E16B /* UndoHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoHistory.swift; sourceTree = "<group>"; };
 		28F22ED4002D2D00827719AB /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
@@ -102,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				6718C8BD1653FA60117CEDDC /* Assets.xcassets */,
+				0A8FF4077F854300A78C68AC /* BaseballStatTracker.entitlements */,
 				4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */,
 				11233A33223A3C188EF676AE /* Models */,
 				A0D77D627F5B43626F13412C /* Preview Content */,
@@ -204,8 +206,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = BaseballStatTracker/BaseballStatTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -349,8 +352,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = BaseballStatTracker/BaseballStatTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

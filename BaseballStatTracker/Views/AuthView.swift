@@ -1,161 +1,243 @@
 import SwiftUI
+import AuthenticationServices
 
 struct AuthView: View {
     @EnvironmentObject private var auth: AuthStore
+    @Environment(\.colorScheme) private var colorScheme
 
-    enum Mode { case signIn, signUp }
-    @State private var mode: Mode = .signIn
+    @State private var showEmailSheet = false
+    @State private var heroIndex = 1
 
-    @State private var email = ""
-    @State private var password = ""
-    @State private var displayName = ""
-    @FocusState private var focused: Field?
-
-    enum Field { case email, password, name }
+    private let heroWords = ["Swing", "Track", "Win"]
+    private let rotationInterval: TimeInterval = 2.6
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color(red: 0.05, green: 0.09, blue: 0.25),
-                         Color(red: 0.10, green: 0.06, blue: 0.18),
-                         Color(red: 0.55, green: 0.30, blue: 0.15)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            background
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                heroStack
+                    .padding(.top, 80)
+                Spacer(minLength: 0)
+                lowerCard
+            }
+            .frame(maxHeight: .infinity)
+        }
+        .ignoresSafeArea()
+        .onAppear { startRotation() }
+        .sheet(isPresented: $showEmailSheet) {
+            EmailAuthSheet()
+                .environmentObject(auth)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+    }
 
-            ScrollView {
-                VStack(spacing: 28) {
-                    header
-                    card
-                    footer
+    private var background: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .white, location: 0.0),
+                .init(color: .white, location: 0.38),
+                .init(color: Color(red: 0.78, green: 0.90, blue: 1.0), location: 0.52),
+                .init(color: Color(red: 0.20, green: 0.52, blue: 0.96), location: 0.78),
+                .init(color: Color(red: 0.10, green: 0.35, blue: 0.88), location: 1.0)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    private var heroStack: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            heroLine(for: index(-1), opacity: 0.18, fontSize: 48, bold: false)
+            heroLine(for: index(0), opacity: 1.0, fontSize: 60, bold: true, icon: true)
+            heroLine(for: index(1), opacity: 0.18, fontSize: 48, bold: false)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 36)
+        .animation(.easeInOut(duration: 0.6), value: heroIndex)
+    }
+
+    private func heroLine(for i: Int, opacity: Double, fontSize: CGFloat, bold: Bool, icon: Bool = false) -> some View {
+        HStack(spacing: 12) {
+            if icon {
+                HeroIcon().frame(width: 44, height: 44)
+            }
+            Text(heroWords[i])
+                .font(.system(size: fontSize, weight: bold ? .bold : .regular))
+                .foregroundStyle(.black)
+                .opacity(opacity)
+        }
+    }
+
+    private func index(_ offset: Int) -> Int {
+        let n = heroWords.count
+        return ((heroIndex + offset) % n + n) % n
+    }
+
+    private func startRotation() {
+        Timer.scheduledTimer(withTimeInterval: rotationInterval, repeats: true) { _ in
+            Task { @MainActor in
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    heroIndex = (heroIndex + 1) % heroWords.count
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 60)
-                .padding(.bottom, 40)
             }
         }
     }
 
-    private var header: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "figure.baseball")
-                .font(.system(size: 52, weight: .semibold))
+    private var lowerCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            AppBadge()
+            Text("Every at-bat,\ntracked.")
+                .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(.white)
-                .padding(22)
-                .background(
-                    Circle().fill(.white.opacity(0.12))
-                )
-            Text("Baseball Stat Tracker")
-                .font(.system(.title, design: .rounded).weight(.bold))
-                .foregroundStyle(.white)
-            Text(mode == .signIn ? "Welcome back." : "Create your account.")
+                .multilineTextAlignment(.leading)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("Record hits, walks, and game stats for every player. Unlimited undo, private, all yours.")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.8))
-        }
-    }
+                .foregroundStyle(.white.opacity(0.82))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 8)
 
-    private var card: some View {
-        VStack(spacing: 14) {
-            Picker("Mode", selection: $mode) {
-                Text("Sign In").tag(Mode.signIn)
-                Text("Sign Up").tag(Mode.signUp)
+            SignInWithAppleButton(
+                .continue,
+                onRequest: { req in
+                    req.requestedScopes = [.fullName, .email]
+                },
+                onCompletion: { result in
+                    auth.handleAppleAuthorization(result)
+                }
+            )
+            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+            .frame(height: 54)
+            .clipShape(Capsule())
+
+            Button {
+                auth.clearError()
+                showEmailSheet = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "envelope.fill")
+                        .font(.subheadline)
+                    Text("Sign in with email")
+                        .font(.headline)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .foregroundStyle(.white)
+                .background(Capsule().fill(.white.opacity(0.22)))
+                .overlay(Capsule().stroke(.white.opacity(0.4), lineWidth: 1))
             }
-            .pickerStyle(.segmented)
-            .onChange(of: mode) { _, _ in auth.clearError() }
-
-            if mode == .signUp {
-                field("Display name", text: $displayName, field: .name, icon: "person")
-                    .textContentType(.name)
-                    .textInputAutocapitalization(.words)
-            }
-
-            field("Email", text: $email, field: .email, icon: "envelope")
-                .keyboardType(.emailAddress)
-                .textContentType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-
-            secureField("Password", text: $password, icon: "lock")
 
             if let err = auth.lastError {
                 Text(err)
                     .font(.footnote)
-                    .foregroundStyle(.red)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Button(action: submit) {
-                Text(mode == .signIn ? "Sign In" : "Create Account")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        LinearGradient(colors: [.blue, .indigo],
-                                       startPoint: .leading, endPoint: .trailing),
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    )
                     .foregroundStyle(.white)
+                    .padding(.top, 4)
             }
-            .disabled(!canSubmit)
-            .opacity(canSubmit ? 1 : 0.5)
-            .padding(.top, 4)
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(.white.opacity(0.18), lineWidth: 1)
-        )
+        .padding(.horizontal, 28)
+        .padding(.top, 24)
+        .padding(.bottom, 44)
     }
+}
 
-    private var footer: some View {
-        Button {
-            withAnimation(.easeInOut) {
-                mode = (mode == .signIn) ? .signUp : .signIn
-                auth.clearError()
+private struct HeroIcon: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.white)
+                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+            HStack(alignment: .bottom, spacing: 3) {
+                bar(height: 12); bar(height: 22); bar(height: 32)
             }
-        } label: {
-            Text(mode == .signIn ? "Don't have an account? Sign up" : "Already have an account? Sign in")
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.85))
         }
     }
-
-    private func field(_ placeholder: String, text: Binding<String>, field: Field, icon: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundStyle(.secondary)
-                .frame(width: 18)
-            TextField(placeholder, text: text)
-                .focused($focused, equals: field)
-        }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.white.opacity(0.85))
-        )
+    private func bar(height: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 2, style: .continuous)
+            .fill(
+                LinearGradient(colors: [Color.orange, Color(red: 1, green: 0.42, blue: 0.2)],
+                               startPoint: .top, endPoint: .bottom)
+            )
+            .frame(width: 6, height: height)
     }
+}
 
-    private func secureField(_ placeholder: String, text: Binding<String>, icon: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundStyle(.secondary)
-                .frame(width: 18)
-            SecureField(placeholder, text: text)
-                .textContentType(mode == .signIn ? .password : .newPassword)
-                .focused($focused, equals: .password)
-        }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 14)
-        .background(
+private struct AppBadge: View {
+    var body: some View {
+        ZStack {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.white.opacity(0.85))
-        )
+                .fill(.white)
+                .shadow(color: .black.opacity(0.15), radius: 6, y: 2)
+            Image(systemName: "baseball.fill")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(
+                    LinearGradient(colors: [.blue, .indigo], startPoint: .top, endPoint: .bottom)
+                )
+        }
+        .frame(width: 46, height: 46)
+    }
+}
+
+private struct EmailAuthSheet: View {
+    @EnvironmentObject private var auth: AuthStore
+    @Environment(\.dismiss) private var dismiss
+
+    enum Mode { case signIn, signUp }
+    @State private var mode: Mode = .signIn
+    @State private var email = ""
+    @State private var password = ""
+    @State private var displayName = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("Mode", selection: $mode) {
+                        Text("Sign In").tag(Mode.signIn)
+                        Text("Sign Up").tag(Mode.signUp)
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: mode) { _, _ in auth.clearError() }
+                }
+
+                Section("Account") {
+                    if mode == .signUp {
+                        TextField("Display name", text: $displayName)
+                            .textContentType(.name)
+                            .textInputAutocapitalization(.words)
+                    }
+                    TextField("Email", text: $email)
+                        .keyboardType(.emailAddress)
+                        .textContentType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    SecureField("Password", text: $password)
+                        .textContentType(mode == .signIn ? .password : .newPassword)
+                }
+
+                if let err = auth.lastError {
+                    Section {
+                        Text(err).foregroundStyle(.red).font(.footnote)
+                    }
+                }
+
+                Section {
+                    Button(mode == .signIn ? "Sign In" : "Create Account") { submit() }
+                        .disabled(!canSubmit)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .navigationTitle(mode == .signIn ? "Sign In" : "Create Account")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
     }
 
     private var canSubmit: Bool {
@@ -166,13 +248,13 @@ struct AuthView: View {
     }
 
     private func submit() {
-        focused = nil
         switch mode {
         case .signIn:
             auth.signIn(email: email, password: password)
         case .signUp:
             auth.signUp(email: email, password: password, displayName: displayName)
         }
+        if auth.isSignedIn { dismiss() }
     }
 }
 
