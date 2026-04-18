@@ -2,6 +2,35 @@
 
 This file is the source of truth for how we work on this app. Claude reads it at the start of each session.
 
+## ⚑ Rule #0: NEVER COMMIT SECRETS
+
+**Nothing sensitive goes in this repo. Ever.** Not in code, not in comments, not in commit messages, not in committed log files.
+
+### What "sensitive" means here
+
+- App Store Connect API keys (`AuthKey_*.p8`) — these let anyone ship builds as us.
+- `scripts/asc-config.env` (the real one, not `.example`) — contains `ASC_KEY_ID`, `ASC_ISSUER_ID`, numeric `ASC_APP_ID`.
+- Apple signing certs / private keys / provisioning profiles (`.p12`, `.pem`, `.cer`, `.mobileprovision`).
+- Any future backend tokens, database URLs with passwords, Supabase service keys, Firebase configs with API secrets, push-notification certs.
+- Real user passwords or PII if we ever get test data (scrub before committing).
+
+### Guardrails already in place
+
+- `.gitignore` blocks `*.env` (except `*.env.example`), `*.p8`, `*.p12`, `*.pem`, `*.key`, `*.cer`, `*.mobileprovision`, `AuthKey_*`, `secrets.*`, `Secrets.swift`, `GoogleService-Info.plist`, and the cron log files.
+- The real `scripts/asc-config.env` is ignored; only `asc-config.env.example` (all placeholders) is tracked.
+- API keys live at `~/.appstoreconnect/private_keys/AuthKey_XXXXXXXXXX.p8` (`chmod 600`), outside the repo.
+
+### Before every commit
+
+```bash
+git status
+git diff --cached
+```
+
+If you accidentally stage something sensitive, **don't just `git reset`** — the file may still be in the object database. Unstage with `git rm --cached <file>`. If it was already pushed, **rotate the credential immediately** (revoke the ASC key in App Store Connect and issue a new one), then scrub history with `git filter-repo` or BFG and force-push. Rotating is always faster and safer than trying to hide a leaked secret.
+
+---
+
 ## ⚑ Rule #1: PUSH TO GITHUB AFTER EVERY CHANGE
 
 **Non-negotiable.** After *every* code, asset, script, or doc change — no matter how small — commit and push to `origin main` on `git@github.com:divinedavis/Baseball-Stat-Tracker.git`.

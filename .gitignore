@@ -23,3 +23,21 @@ scripts/asc-config.env
 scripts/.last-shipped-commit
 scripts/.cron.out.log
 scripts/.cron.err.log
+
+# Never commit credentials, signing material, or provisioning.
+# These patterns are defensive — nothing should be trying to land here anyway.
+*.env
+!*.env.example
+*.p8
+*.p12
+*.pem
+*.key
+*.cer
+*.mobileprovision
+*.provisionprofile
+AuthKey_*
+secrets.*
+Secrets.swift
+GoogleService-Info.plist
+.env.local
+.env.*.local

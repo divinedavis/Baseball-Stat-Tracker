@@ -1,25 +1,33 @@
 import Foundation
 import Combine
+import CryptoKit
 
 struct AuthUser: Codable, Equatable {
     let email: String
     let displayName: String
 }
 
+/// Local-only auth backed by the iOS Keychain so that:
+///  - sessions survive app relaunches (users stay signed in),
+///  - sessions survive app deletion + reinstall on the same device
+///    (Keychain entries persist when the app's sandbox is wiped),
+///  - signing out is the only way to end a session.
+///
+/// When we wire up a real backend (Supabase, Firebase, custom), swap the
+/// `credentials` dictionary for a remote identity provider and keep the session
+/// token in Keychain the same way.
 @MainActor
 final class AuthStore: ObservableObject {
     @Published private(set) var currentUser: AuthUser?
     @Published var lastError: String?
 
-    private let defaults: UserDefaults
-    private let userKey = "auth.currentUser"
-    private let credentialsKey = "auth.credentials"
+    private let sessionAccount = "session.currentUser"
+    private let credentialsAccount = "session.credentials"
 
     var isSignedIn: Bool { currentUser != nil }
 
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        if let data = defaults.data(forKey: userKey),
+    init() {
+        if let data = KeychainStore.get(account: sessionAccount),
            let user = try? JSONDecoder().decode(AuthUser.self, from: data) {
             self.currentUser = user
         }
@@ -73,12 +81,14 @@ final class AuthStore: ObservableObject {
 
     func signOut() {
         currentUser = nil
-        defaults.removeObject(forKey: userKey)
+        KeychainStore.delete(account: sessionAccount)
+        // Intentionally keep `credentialsAccount` intact — the user's password
+        // on this device should still work the next time they sign in.
     }
 
     func clearError() { lastError = nil }
 
-    // MARK: - Internal
+    // MARK: - Credential storage
 
     private struct StoredCredential: Codable {
         let passwordHash: String
@@ -86,7 +96,7 @@ final class AuthStore: ObservableObject {
     }
 
     private func storedCredentials() -> [String: StoredCredential] {
-        guard let data = defaults.data(forKey: credentialsKey),
+        guard let data = KeychainStore.get(account: credentialsAccount),
               let decoded = try? JSONDecoder().decode([String: StoredCredential].self, from: data) else {
             return [:]
         }
@@ -95,14 +105,14 @@ final class AuthStore: ObservableObject {
 
     private func saveCredentials(_ creds: [String: StoredCredential]) {
         guard let data = try? JSONEncoder().encode(creds) else { return }
-        defaults.set(data, forKey: credentialsKey)
+        try? KeychainStore.set(data, account: credentialsAccount)
     }
 
     private func persist(_ user: AuthUser) {
         currentUser = user
         lastError = nil
         if let data = try? JSONEncoder().encode(user) {
-            defaults.set(data, forKey: userKey)
+            try? KeychainStore.set(data, account: sessionAccount)
         }
     }
 
@@ -111,10 +121,9 @@ final class AuthStore: ObservableObject {
         return email.range(of: pattern, options: .regularExpression) != nil
     }
 
-    // Deterministic non-cryptographic obfuscation so plaintext isn't sitting in UserDefaults.
-    // Not secure — swap for Keychain + a real backend before shipping to real users.
     private func hash(_ password: String) -> String {
-        let salted = "bst.v1:" + password
-        return Data(salted.utf8).base64EncodedString()
+        let salted = "bst.v2:" + password
+        let digest = SHA256.hash(data: Data(salted.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
     }
 }
