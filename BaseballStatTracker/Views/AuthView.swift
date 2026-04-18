@@ -104,6 +104,7 @@ struct AuthView: View {
             SignInWithAppleButton(
                 .continue,
                 onRequest: { req in
+                    auth.clearError()
                     req.requestedScopes = [.fullName, .email]
                 },
                 onCompletion: { result in

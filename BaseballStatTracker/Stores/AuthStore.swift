@@ -42,9 +42,13 @@ final class AuthStore: ObservableObject {
 
     func handleAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
         switch result {
-        case .failure(let error):
-            if let ase = error as? ASAuthorizationError, ase.code == .canceled { return }
-            lastError = "Apple sign in failed: \(error.localizedDescription)"
+        case .failure:
+            // Silently ignore every failure path from the Apple sheet — cancel,
+            // dismiss, simulator-has-no-Apple-ID (error 1000 .unknown), and
+            // transient network blips. If the sign-in didn't succeed, the user
+            // is still on this screen and can retry. A red error line for a
+            // user-initiated cancel is worse UX than staying quiet.
+            return
         case .success(let auth):
             guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else {
                 lastError = "Unexpected credential type."
