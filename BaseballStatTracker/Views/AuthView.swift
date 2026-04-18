@@ -28,9 +28,15 @@ struct AuthView: View {
         .sheet(isPresented: $showEmailSheet) {
             EmailAuthSheet()
                 .environmentObject(auth)
+                .environment(\.colorScheme, .light)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(.ultraThinMaterial)
+                .presentationBackground {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .overlay(Color.white.opacity(0.45))
+                        .environment(\.colorScheme, .light)
+                }
                 .presentationCornerRadius(28)
         }
     }
