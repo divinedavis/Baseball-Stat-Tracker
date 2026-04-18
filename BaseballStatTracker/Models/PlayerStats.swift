@@ -9,6 +9,10 @@ struct PlayerStats: Equatable {
     var runsBattedIn: Int = 0
     var walks: Int = 0
     var strikeouts: Int = 0
+    var groundOuts: Int = 0
+    var flyOuts: Int = 0
+    var lineOuts: Int = 0
+    var stolenBases: Int = 0
 
     init(entries: some Sequence<AtBatEntry>) {
         for entry in entries {
@@ -30,8 +34,16 @@ struct PlayerStats: Equatable {
             walks += 1
         case .strikeout:
             atBats += 1; strikeouts += 1
+        case .groundOut:
+            atBats += 1; groundOuts += 1
+        case .flyOut:
+            atBats += 1; flyOuts += 1
+        case .lineOut:
+            atBats += 1; lineOuts += 1
         case .out:
             atBats += 1
+        case .stolenBase:
+            stolenBases += 1
         case .rbi:
             runsBattedIn += 1
         }

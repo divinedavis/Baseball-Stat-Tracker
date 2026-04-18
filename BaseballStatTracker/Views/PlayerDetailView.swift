@@ -42,7 +42,8 @@ struct PlayerDetailView: View {
                         ("AB", "\(stats.atBats)"),
                         ("H", "\(stats.hits)"),
                         ("HR", "\(stats.homeRuns)"),
-                        ("RBI", "\(stats.runsBattedIn)")
+                        ("RBI", "\(stats.runsBattedIn)"),
+                        ("SB", "\(stats.stolenBases)")
                     ])
                 }
             } header: {
@@ -159,6 +160,10 @@ struct CountingStatsGrid: View {
             StatCell(label: "RBI", value: "\(stats.runsBattedIn)")
             StatCell(label: "BB", value: "\(stats.walks)")
             StatCell(label: "K", value: "\(stats.strikeouts)")
+            StatCell(label: "SB", value: "\(stats.stolenBases)")
+            StatCell(label: "GO", value: "\(stats.groundOuts)")
+            StatCell(label: "FO", value: "\(stats.flyOuts)")
+            StatCell(label: "LO", value: "\(stats.lineOuts)")
         }
         .padding(.vertical, 4)
     }
@@ -333,8 +338,9 @@ struct OutcomeBadge: View {
         case .single, .double, .triple: return .green
         case .homeRun: return .orange
         case .walk, .rbi: return .blue
+        case .stolenBase: return .teal
         case .strikeout: return .red
-        case .out: return .gray
+        case .groundOut, .flyOut, .lineOut, .out: return .gray
         }
     }
 }
@@ -365,7 +371,11 @@ struct AtBatPad: View {
 
     @State private var contact: ContactQuality? = nil
 
-    private let outcomes: [AtBatOutcome] = [.single, .double, .triple, .homeRun, .walk, .strikeout, .out, .rbi]
+    private let outcomes: [AtBatOutcome] = [
+        .single, .double, .triple, .homeRun,
+        .walk, .strikeout, .stolenBase, .rbi,
+        .groundOut, .flyOut, .lineOut, .out
+    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {

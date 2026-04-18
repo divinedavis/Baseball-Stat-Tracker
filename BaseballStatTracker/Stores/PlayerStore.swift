@@ -136,7 +136,11 @@ final class PlayerStore: ObservableObject {
 }
 
 enum AtBatOutcome: String, CaseIterable, Identifiable, Codable {
-    case single, double, triple, homeRun, walk, strikeout, out, rbi
+    case single, double, triple, homeRun
+    case walk, strikeout
+    case groundOut, flyOut, lineOut, out
+    case stolenBase, rbi
+
     var id: String { rawValue }
 
     var label: String {
@@ -147,7 +151,11 @@ enum AtBatOutcome: String, CaseIterable, Identifiable, Codable {
         case .homeRun: return "HR"
         case .walk: return "BB"
         case .strikeout: return "K"
+        case .groundOut: return "GO"
+        case .flyOut: return "FO"
+        case .lineOut: return "LO"
         case .out: return "OUT"
+        case .stolenBase: return "SB"
         case .rbi: return "+RBI"
         }
     }
@@ -156,6 +164,15 @@ enum AtBatOutcome: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .single, .double, .triple, .homeRun: return true
         default: return false
+        }
+    }
+
+    /// Whether this outcome counts as an official at-bat (AB).
+    /// Walks, stolen bases, and RBI-only adjustments do not.
+    var countsAsAtBat: Bool {
+        switch self {
+        case .walk, .stolenBase, .rbi: return false
+        default: return true
         }
     }
 }
