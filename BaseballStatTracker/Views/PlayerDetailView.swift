@@ -7,6 +7,8 @@ struct PlayerDetailView: View {
     let player: Player
 
     @State private var entryDate: Date = .now
+    @AppStorage("playerDetail.showCountingStats") private var showCountingStats: Bool = false
+    @AppStorage("playerDetail.showSlashLine") private var showSlashLine: Bool = true
 
     private var current: Player {
         store.players.first(where: { $0.id == player.id }) ?? player
@@ -20,11 +22,31 @@ struct PlayerDetailView: View {
 
     var body: some View {
         List {
-            Section("Slash line") {
-                StatGrid(stats: stats)
+            Section {
+                if showSlashLine {
+                    StatGrid(stats: stats)
+                } else {
+                    MinimizedStats(values: [
+                        ("AVG", StatFormatter.avg(stats.battingAverage)),
+                        ("OPS", StatFormatter.avg(stats.ops))
+                    ])
+                }
+            } header: {
+                CollapsibleHeader(title: "Slash line", isExpanded: $showSlashLine)
             }
-            Section("Counting stats") {
-                CountingStatsGrid(stats: stats)
+            Section {
+                if showCountingStats {
+                    CountingStatsGrid(stats: stats)
+                } else {
+                    MinimizedStats(values: [
+                        ("AB", "\(stats.atBats)"),
+                        ("H", "\(stats.hits)"),
+                        ("HR", "\(stats.homeRuns)"),
+                        ("RBI", "\(stats.runsBattedIn)")
+                    ])
+                }
+            } header: {
+                CollapsibleHeader(title: "Counting stats", isExpanded: $showCountingStats)
             }
             if !recentEntries.isEmpty {
                 Section("Last 5 at-bats") {
@@ -137,6 +159,51 @@ struct CountingStatsGrid: View {
             StatCell(label: "K", value: "\(stats.strikeouts)")
         }
         .padding(.vertical, 4)
+    }
+}
+
+struct CollapsibleHeader: View {
+    let title: String
+    @Binding var isExpanded: Bool
+
+    var body: some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(isExpanded ? "Minimize" : "Expand")
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tint)
+                .textCase(nil)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+struct MinimizedStats: View {
+    let values: [(label: String, value: String)]
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ForEach(values, id: \.label) { pair in
+                HStack(spacing: 4) {
+                    Text(pair.value)
+                        .font(.system(.subheadline, design: .rounded).monospacedDigit())
+                        .fontWeight(.semibold)
+                    Text(pair.label)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+        }
+        .padding(.vertical, 2)
     }
 }
 
