@@ -28,7 +28,7 @@ struct AuthView: View {
         .sheet(isPresented: $showEmailSheet) {
             EmailAuthSheet()
                 .environmentObject(auth)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
     }
