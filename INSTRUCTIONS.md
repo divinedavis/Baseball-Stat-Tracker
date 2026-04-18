@@ -31,28 +31,30 @@ If you accidentally stage something sensitive, **don't just `git reset`** — th
 
 ---
 
-## ⚑ Rule #1: PUSH TO GITHUB AFTER EVERY CHANGE
+## ⚑ Rule #1: PUSH TO GITHUB AND SHIP TO TESTFLIGHT AFTER EVERY CHANGE
 
-**Non-negotiable.** After *every* code, asset, script, or doc change — no matter how small — commit and push to `origin main` on `git@github.com:divinedavis/Baseball-Stat-Tracker.git`.
+**Non-negotiable.** After *every* code, asset, script, or doc change:
 
 ```bash
 git add -A
 git commit -m "<concise imperative subject>"
 git push origin main
+scripts/ship-to-testflight.sh --auto-notes     # run in background; takes 10–25 min
 ```
 
-If the push fails (repo doesn't exist, no auth, network), **stop and surface it immediately** — don't keep editing locally. The hourly TestFlight LaunchAgent reads `origin/main`, so an unpushed commit = a missed build.
+The hourly LaunchAgent was removed on 2026-04-18 — we ship per-change now, not hourly. Iteration is fast enough that batching lags the code; per-change ships keep TestFlight in lockstep with `main`.
+
+If the push fails (repo doesn't exist, no auth, network), **stop and surface it immediately** — don't keep editing locally. If the ship fails, check `scripts/.cron.err.log` or the in-band log path the script prints.
+
+**Ship serialization:** don't start a second ship while a prior one is still uploading or processing — the Apple upload step doesn't parallelize well. Wait for the prior task's completion notification before kicking off the next one.
 
 One meaningful commit per logical change. Don't batch unrelated edits.
 
-## 2. Hourly TestFlight builds (build number bumps like .1, .2, .3…)
+## 2. TestFlight ship pipeline
 
 The ship pipeline (`scripts/ship-to-testflight.sh`) bumps `CURRENT_PROJECT_VERSION` by 1, regenerates the Xcode project, archives Release, exports, uploads via `altool`, and polls App Store Connect until the build is processed — then sets the "What to Test" notes from the git log.
 
-A user LaunchAgent (`com.divinedavis.baseballstattracker.testflight`) fires every `3600s` and invokes the script with `--if-changed --auto-notes`, so:
-- If there are no new commits since the last shipped build → exit 0, nothing happens.
-- If only docs/scripts changed → exit 0, marker advances, no upload.
-- If `BaseballStatTracker/` or `project.yml` changed → a new build ships automatically.
+**Hourly cron is disabled by choice.** The LaunchAgent (`com.divinedavis.baseballstattracker.testflight`) was removed on 2026-04-18. Ship per-change instead (Rule #1). The `install-testflight-cron.sh` / `uninstall-testflight-cron.sh` scripts and the `.plist` template are kept in `scripts/` in case we ever want to reinstate hourly batching.
 
 ### One-time setup
 
@@ -92,23 +94,20 @@ The only click-in-a-web-UI step is creating the ASC API key — API keys can't c
 
    **⚠ Apple limitation:** `POST /v1/apps` is not available on the App Store Connect API (returns `403 FORBIDDEN_ERROR` regardless of API key role). So the bootstrap script automates the bundle ID, but the app record itself has to be created in the web UI once. The script detects this case and prints exact step-by-step instructions when it happens. After clicking Create in the web UI, re-run `scripts/bootstrap-app.py` — it'll find the app and finish the wiring. If the name is taken on the App Store, pass `--name "Baseball Stats Tracker"` or similar on the retry.
 
-4. **Install the hourly LaunchAgent**:
-
-   ```bash
-   scripts/install-testflight-cron.sh
-   ```
-
-5. **First manual ship** (sanity check — do this before trusting the cron):
+4. **First ship**:
 
    ```bash
    scripts/ship-to-testflight.sh "Initial TestFlight build"
    ```
 
+   After this, every change follows Rule #1: commit, push, and re-run `scripts/ship-to-testflight.sh --auto-notes`.
+
 ### Useful commands
 
 ```bash
-# see the launchd status
-launchctl print "gui/$(id -u)/com.divinedavis.baseballstattracker.testflight" | head -20
+# (optional, only if reinstating the hourly batch workflow)
+#   scripts/install-testflight-cron.sh
+#   launchctl print "gui/$(id -u)/com.divinedavis.baseballstattracker.testflight" | head -20
 
 # tail the cron logs
 tail -f scripts/.cron.out.log scripts/.cron.err.log
