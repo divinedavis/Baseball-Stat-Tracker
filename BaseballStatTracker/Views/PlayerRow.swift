@@ -1,0 +1,52 @@
+import SwiftUI
+
+struct PlayerRow: View {
+    let player: Player
+
+    var body: some View {
+        HStack(spacing: 12) {
+            NumberBadge(number: player.number)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(player.name)
+                    .font(.headline)
+                Text(player.position)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(StatFormatter.avg(player.battingAverage))
+                    .font(.system(.body, design: .rounded).monospacedDigit())
+                    .fontWeight(.semibold)
+                Text("AVG")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct NumberBadge: View {
+    let number: Int
+    var body: some View {
+        Text("\(number)")
+            .font(.system(.headline, design: .rounded).monospacedDigit())
+            .foregroundStyle(.white)
+            .frame(width: 40, height: 40)
+            .background(
+                LinearGradient(
+                    colors: [.blue, .indigo],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            )
+    }
+}
+
+enum StatFormatter {
+    static func avg(_ value: Double) -> String {
+        String(format: "%.3f", value).replacingOccurrences(of: "0.", with: ".")
+    }
+}

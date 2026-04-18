@@ -1,0 +1,372 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		081C3D1BBC12A47E0E58B24E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6718C8BD1653FA60117CEDDC /* Assets.xcassets */; };
+		0AFBF722D9722253FB96E060 /* PlayerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */; };
+		49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */; };
+		4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */; };
+		676B42F2234073CCE261CE47 /* PlayerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B153D5431BA4783907DCD64 /* PlayerStore.swift */; };
+		95E8E9A38BF83F5710B20E21 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E39437343090B7B311914B1E /* RootView.swift */; };
+		BECB334E22CA5BD7F90A6F19 /* PlayerRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47513A76126FC08BE675D9B1 /* PlayerRow.swift */; };
+		D73887A94E1D6B07F635EE38 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCE2D4E520B221A57E7707E7 /* Player.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0B153D5431BA4783907DCD64 /* PlayerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerStore.swift; sourceTree = "<group>"; };
+		4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballStatTrackerApp.swift; sourceTree = "<group>"; };
+		47513A76126FC08BE675D9B1 /* PlayerRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerRow.swift; sourceTree = "<group>"; };
+		4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPlayerView.swift; sourceTree = "<group>"; };
+		5E30F52957D74423F14540E8 /* BaseballStatTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BaseballStatTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6718C8BD1653FA60117CEDDC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerDetailView.swift; sourceTree = "<group>"; };
+		DCE2D4E520B221A57E7707E7 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		E39437343090B7B311914B1E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		07B09F12C04028EFC6D78215 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				0B153D5431BA4783907DCD64 /* PlayerStore.swift */,
+			);
+			path = Stores;
+			sourceTree = "<group>";
+		};
+		11233A33223A3C188EF676AE /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				DCE2D4E520B221A57E7707E7 /* Player.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		2FA1ED7EC76D265ACC77062B /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */,
+				B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */,
+				47513A76126FC08BE675D9B1 /* PlayerRow.swift */,
+				E39437343090B7B311914B1E /* RootView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		5DBC0F3EADD206B9721FAFEB = {
+			isa = PBXGroup;
+			children = (
+				E8414F96CE476165F596CFFD /* BaseballStatTracker */,
+				96FE54C0D577536CFEB0DBB5 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		96FE54C0D577536CFEB0DBB5 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5E30F52957D74423F14540E8 /* BaseballStatTracker.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A0D77D627F5B43626F13412C /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		E8414F96CE476165F596CFFD /* BaseballStatTracker */ = {
+			isa = PBXGroup;
+			children = (
+				6718C8BD1653FA60117CEDDC /* Assets.xcassets */,
+				4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */,
+				11233A33223A3C188EF676AE /* Models */,
+				A0D77D627F5B43626F13412C /* Preview Content */,
+				07B09F12C04028EFC6D78215 /* Stores */,
+				2FA1ED7EC76D265ACC77062B /* Views */,
+			);
+			path = BaseballStatTracker;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		04FDA87D9A969EA74BE1DD29 /* BaseballStatTracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 36BBB8377EDB8D15AF7831DF /* Build configuration list for PBXNativeTarget "BaseballStatTracker" */;
+			buildPhases = (
+				861D5790A967BBC9C64075BA /* Sources */,
+				D393D9C7807E7ABC1FE2FF14 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BaseballStatTracker;
+			packageProductDependencies = (
+			);
+			productName = BaseballStatTracker;
+			productReference = 5E30F52957D74423F14540E8 /* BaseballStatTracker.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F7524C9988FFBD5B05CC4906 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					04FDA87D9A969EA74BE1DD29 = {
+						DevelopmentTeam = CG89RY4W6R;
+					};
+				};
+			};
+			buildConfigurationList = 4BE1114049BC1B4585A26FCE /* Build configuration list for PBXProject "BaseballStatTracker" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5DBC0F3EADD206B9721FAFEB;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 96FE54C0D577536CFEB0DBB5 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				04FDA87D9A969EA74BE1DD29 /* BaseballStatTracker */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D393D9C7807E7ABC1FE2FF14 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				081C3D1BBC12A47E0E58B24E /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		861D5790A967BBC9C64075BA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */,
+				4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */,
+				D73887A94E1D6B07F635EE38 /* Player.swift in Sources */,
+				0AFBF722D9722253FB96E060 /* PlayerDetailView.swift in Sources */,
+				BECB334E22CA5BD7F90A6F19 /* PlayerRow.swift in Sources */,
+				676B42F2234073CCE261CE47 /* PlayerStore.swift in Sources */,
+				95E8E9A38BF83F5710B20E21 /* RootView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0A0F3F1F8DCE2D0E9E1DFBD9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.divinedavis.BaseballStatTracker;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1D27FB02D293093737AFC214 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = CG89RY4W6R;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		2FD7CD211F5330EA37093788 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = CG89RY4W6R;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		835CFB1B48D3D0424A2C4C4E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.divinedavis.BaseballStatTracker;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		36BBB8377EDB8D15AF7831DF /* Build configuration list for PBXNativeTarget "BaseballStatTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A0F3F1F8DCE2D0E9E1DFBD9 /* Debug */,
+				835CFB1B48D3D0424A2C4C4E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4BE1114049BC1B4585A26FCE /* Build configuration list for PBXProject "BaseballStatTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2FD7CD211F5330EA37093788 /* Debug */,
+				1D27FB02D293093737AFC214 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F7524C9988FFBD5B05CC4906 /* Project object */;
+}

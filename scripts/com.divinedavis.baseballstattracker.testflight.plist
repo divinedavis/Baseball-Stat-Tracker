@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+Runs ship-to-testflight.sh every hour as a user LaunchAgent.
+Install via scripts/install-testflight-cron.sh; uninstall with scripts/uninstall-testflight-cron.sh.
+Only fires while the user is logged in (keychain has to be unlocked for codesign).
+The {{PROJECT_ROOT}} placeholder is substituted at install time.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.divinedavis.baseballstattracker.testflight</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-lc</string>
+        <string>cd "{{PROJECT_ROOT}}" &amp;&amp; git fetch --quiet &amp;&amp; git merge --ff-only --quiet origin/main 2&gt;/dev/null || true; scripts/ship-to-testflight.sh --if-changed --auto-notes</string>
+    </array>
+
+    <key>StartInterval</key>
+    <integer>3600</integer>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>{{PROJECT_ROOT}}/scripts/.cron.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{PROJECT_ROOT}}/scripts/.cron.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>
