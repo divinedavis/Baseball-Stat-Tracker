@@ -15,29 +15,37 @@ struct RootView: View {
                         description: Text("Tap + to add your first player.")
                     )
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(store.players) { player in
-                                NavigationLink(value: player.id) {
-                                    PlayerCard(player: player)
+                    List {
+                        ForEach(store.players) { player in
+                            NavigationLink(value: player.id) {
+                                PlayerCard(player: player)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    delete(player)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
                                 }
-                                .buttonStyle(.plain)
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        delete(player)
-                                    } label: {
-                                        Label("Delete player", systemImage: "trash")
-                                    }
+                            }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    delete(player)
+                                } label: {
+                                    Label("Delete player", systemImage: "trash")
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                     .background(Color(.systemGroupedBackground))
                 }
             }
-            .navigationTitle("Roster")
+            .navigationTitle("Player")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
