@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var store: PlayerStore
+    @EnvironmentObject private var auth: AuthStore
     @State private var showingAdd = false
 
     var body: some View {
@@ -31,6 +32,23 @@ struct RootView: View {
                         Image(systemName: "plus")
                     }
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Menu {
+                        if let user = auth.currentUser {
+                            Section {
+                                Text(user.displayName)
+                                Text(user.email).font(.caption)
+                            }
+                        }
+                        Button(role: .destructive) {
+                            auth.signOut()
+                        } label: {
+                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                        }
+                    } label: {
+                        Image(systemName: "person.crop.circle")
+                    }
+                }
             }
             .navigationDestination(for: Player.ID.self) { id in
                 if let player = store.players.first(where: { $0.id == id }) {
@@ -45,5 +63,7 @@ struct RootView: View {
 }
 
 #Preview {
-    RootView().environmentObject(PlayerStore())
+    RootView()
+        .environmentObject(PlayerStore())
+        .environmentObject(AuthStore())
 }

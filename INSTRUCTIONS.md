@@ -2,19 +2,19 @@
 
 This file is the source of truth for how we work on this app. Claude reads it at the start of each session.
 
-## 1. GitHub: push after every change
+## ⚑ Rule #1: PUSH TO GITHUB AFTER EVERY CHANGE
 
-- Remote: `git@github.com:divinedavis/Baseball-Stat-Tracker.git`
-- Branch: `main`
-- After **every** code or asset change, commit and push:
+**Non-negotiable.** After *every* code, asset, script, or doc change — no matter how small — commit and push to `origin main` on `git@github.com:divinedavis/Baseball-Stat-Tracker.git`.
 
-  ```bash
-  git add -A
-  git commit -m "<concise imperative subject>"
-  git push origin main
-  ```
+```bash
+git add -A
+git commit -m "<concise imperative subject>"
+git push origin main
+```
 
-- One meaningful commit per logical change (don't batch unrelated edits). The hourly TestFlight LaunchAgent reads `origin/main`, so a missed push means a missed build.
+If the push fails (repo doesn't exist, no auth, network), **stop and surface it immediately** — don't keep editing locally. The hourly TestFlight LaunchAgent reads `origin/main`, so an unpushed commit = a missed build.
+
+One meaningful commit per logical change. Don't batch unrelated edits.
 
 ## 2. Hourly TestFlight builds (build number bumps like .1, .2, .3…)
 

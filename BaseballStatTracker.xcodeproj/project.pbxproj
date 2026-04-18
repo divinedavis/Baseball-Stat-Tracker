@@ -12,18 +12,22 @@
 		49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */; };
 		4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */; };
 		676B42F2234073CCE261CE47 /* PlayerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B153D5431BA4783907DCD64 /* PlayerStore.swift */; };
+		8D0A87F290719AB3431B5C01 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28F22ED4002D2D00827719AB /* AuthView.swift */; };
 		95E8E9A38BF83F5710B20E21 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E39437343090B7B311914B1E /* RootView.swift */; };
 		BECB334E22CA5BD7F90A6F19 /* PlayerRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47513A76126FC08BE675D9B1 /* PlayerRow.swift */; };
+		CA558154609F2894612DF88B /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 995483BEF01B78D0C6285594 /* AuthStore.swift */; };
 		D73887A94E1D6B07F635EE38 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCE2D4E520B221A57E7707E7 /* Player.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0B153D5431BA4783907DCD64 /* PlayerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerStore.swift; sourceTree = "<group>"; };
+		28F22ED4002D2D00827719AB /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballStatTrackerApp.swift; sourceTree = "<group>"; };
 		47513A76126FC08BE675D9B1 /* PlayerRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerRow.swift; sourceTree = "<group>"; };
 		4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPlayerView.swift; sourceTree = "<group>"; };
 		5E30F52957D74423F14540E8 /* BaseballStatTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BaseballStatTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6718C8BD1653FA60117CEDDC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		995483BEF01B78D0C6285594 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerDetailView.swift; sourceTree = "<group>"; };
 		DCE2D4E520B221A57E7707E7 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
 		E39437343090B7B311914B1E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -33,6 +37,7 @@
 		07B09F12C04028EFC6D78215 /* Stores */ = {
 			isa = PBXGroup;
 			children = (
+				995483BEF01B78D0C6285594 /* AuthStore.swift */,
 				0B153D5431BA4783907DCD64 /* PlayerStore.swift */,
 			);
 			path = Stores;
@@ -50,6 +55,7 @@
 			isa = PBXGroup;
 			children = (
 				4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */,
+				28F22ED4002D2D00827719AB /* AuthView.swift */,
 				B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */,
 				47513A76126FC08BE675D9B1 /* PlayerRow.swift */,
 				E39437343090B7B311914B1E /* RootView.swift */,
@@ -164,6 +170,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */,
+				CA558154609F2894612DF88B /* AuthStore.swift in Sources */,
+				8D0A87F290719AB3431B5C01 /* AuthView.swift in Sources */,
 				4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */,
 				D73887A94E1D6B07F635EE38 /* Player.swift in Sources */,
 				0AFBF722D9722253FB96E060 /* PlayerDetailView.swift in Sources */,
