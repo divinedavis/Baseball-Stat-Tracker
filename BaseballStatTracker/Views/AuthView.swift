@@ -190,7 +190,12 @@ private struct EmailAuthSheet: View {
     @State private var mode: Mode = .signIn
     @State private var email = ""
     @State private var password = ""
+    @State private var confirmPassword = ""
     @State private var displayName = ""
+
+    private var passwordsMatch: Bool {
+        mode == .signIn || (password == confirmPassword && !confirmPassword.isEmpty)
+    }
 
     var body: some View {
         NavigationStack {
@@ -201,7 +206,10 @@ private struct EmailAuthSheet: View {
                         Text("Sign Up").tag(Mode.signUp)
                     }
                     .pickerStyle(.segmented)
-                    .onChange(of: mode) { _, _ in auth.clearError() }
+                    .onChange(of: mode) { _, _ in
+                        auth.clearError()
+                        confirmPassword = ""
+                    }
                 }
 
                 Section("Account") {
@@ -217,9 +225,21 @@ private struct EmailAuthSheet: View {
                         .autocorrectionDisabled()
                     SecureField("Password", text: $password)
                         .textContentType(mode == .signIn ? .password : .newPassword)
+                    if mode == .signUp {
+                        SecureField("Confirm password", text: $confirmPassword)
+                            .textContentType(.newPassword)
+                    }
                 }
 
-                if let err = auth.lastError {
+                if mode == .signUp,
+                   !confirmPassword.isEmpty,
+                   password != confirmPassword {
+                    Section {
+                        Label("Passwords don't match.", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                            .font(.footnote)
+                    }
+                } else if let err = auth.lastError {
                     Section {
                         Text(err).foregroundStyle(.red).font(.footnote)
                     }
@@ -245,7 +265,7 @@ private struct EmailAuthSheet: View {
         let emailOk = !email.trimmingCharacters(in: .whitespaces).isEmpty
         let pwOk = password.count >= 6
         let nameOk = mode == .signIn || !displayName.trimmingCharacters(in: .whitespaces).isEmpty
-        return emailOk && pwOk && nameOk
+        return emailOk && pwOk && nameOk && passwordsMatch
     }
 
     private func submit() {
