@@ -8,7 +8,6 @@ struct AddPlayerView: View {
     @State private var number: Int = 0
     @State private var age: Int = 0
     @State private var position: String = "CF"
-    @State private var team: String = ""
 
     private let positions = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"]
 
@@ -22,32 +21,6 @@ struct AddPlayerView: View {
                     Picker("Position", selection: $position) {
                         ForEach(positions, id: \.self) { Text($0) }
                     }
-                }
-
-                Section {
-                    TextField("Team (optional)", text: $team)
-                        .textInputAutocapitalization(.words)
-                        .autocorrectionDisabled()
-                    if !store.teams.isEmpty {
-                        Menu {
-                            Button("None") { team = "" }
-                            Divider()
-                            ForEach(store.teams, id: \.self) { t in
-                                Button(t) { team = t }
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "list.bullet")
-                                Text("Pick from saved teams")
-                                Spacer()
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Team")
-                } footer: {
-                    Text("Saved teams appear here the next time you add a player.")
-                        .font(.caption2)
                 }
             }
             .navigationTitle("Add Player")
@@ -83,18 +56,14 @@ struct AddPlayerView: View {
     private func save() {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
-        let trimmedTeam = team.trimmingCharacters(in: .whitespacesAndNewlines)
         let player = Player(
             name: trimmedName,
             number: number,
             position: position,
             age: age > 0 ? age : nil,
-            team: trimmedTeam.isEmpty ? nil : trimmedTeam
+            team: nil
         )
         store.addPlayer(player)
-        if !trimmedTeam.isEmpty {
-            store.rememberTeam(trimmedTeam)
-        }
         dismiss()
     }
 }
