@@ -51,11 +51,8 @@ struct PlayerDetailView: View {
             }
             if !recentEntries.isEmpty {
                 let recentStats = PlayerStats(entries: recentEntries)
-                Section("Last 5 at-bats") {
+                Section("Recent form") {
                     RecentFormMeter(stats: recentStats)
-                    ForEach(recentEntries) { entry in
-                        RecentAtBatRow(entry: entry)
-                    }
                 }
             }
             Section {
@@ -272,28 +269,6 @@ struct RecentFormMeter: View {
     }
 }
 
-struct RecentAtBatRow: View {
-    let entry: AtBatEntry
-
-    var body: some View {
-        HStack(spacing: 12) {
-            OutcomeBadge(outcome: entry.outcome)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.date, format: .relative(presentation: .named))
-                    .font(.subheadline.weight(.medium))
-                Text(entry.date, format: .dateTime.month(.abbreviated).day().hour().minute())
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            if let contact = entry.contact {
-                ContactChip(quality: contact)
-            }
-        }
-        .padding(.vertical, 2)
-    }
-}
-
 struct ContactChip: View {
     let quality: ContactQuality
 
@@ -315,32 +290,6 @@ struct ContactChip: View {
         switch quality {
         case .strong: return .green
         case .weak: return .orange
-        }
-    }
-}
-
-struct OutcomeBadge: View {
-    let outcome: AtBatOutcome
-
-    var body: some View {
-        Text(outcome.label)
-            .font(.system(.subheadline, design: .rounded).weight(.bold))
-            .foregroundStyle(tint)
-            .frame(minWidth: 46, minHeight: 28)
-            .padding(.horizontal, 8)
-            .background(
-                Capsule().fill(tint.opacity(0.18))
-            )
-    }
-
-    private var tint: Color {
-        switch outcome {
-        case .single, .double, .triple: return .green
-        case .homeRun: return .orange
-        case .walk, .rbi: return .blue
-        case .stolenBase: return .teal
-        case .strikeout: return .red
-        case .groundOut, .flyOut, .lineOut, .out: return .gray
         }
     }
 }
