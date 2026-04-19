@@ -39,13 +39,8 @@ struct PlayerDetailView: View {
             } header: {
                 CollapsibleHeader(title: "Counting stats", isExpanded: $showCountingStats)
             }
-            Section {
+            Section("Record an at-bat") {
                 AtBatPad(playerID: current.id, date: entryDate, history: history)
-            } header: {
-                Text("Record an at-bat")
-            } footer: {
-                Text("Each tap creates a dated entry. Use Undo to reverse.")
-                    .font(.caption)
             }
             Section {
                 DatePicker("Date", selection: $entryDate, displayedComponents: [.date, .hourAndMinute])
