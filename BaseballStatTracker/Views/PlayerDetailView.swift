@@ -8,7 +8,6 @@ struct PlayerDetailView: View {
 
     @State private var entryDate: Date = .now
     @AppStorage("playerDetail.showCountingStats") private var showCountingStats: Bool = false
-    @AppStorage("playerDetail.showSlashLine") private var showSlashLine: Bool = true
 
     private var current: Player {
         store.players.first(where: { $0.id == player.id }) ?? player
@@ -22,17 +21,8 @@ struct PlayerDetailView: View {
 
     var body: some View {
         List {
-            Section {
-                if showSlashLine {
-                    StatGrid(stats: stats)
-                } else {
-                    MinimizedStats(values: [
-                        ("AVG", StatFormatter.avg(stats.battingAverage)),
-                        ("OPS", StatFormatter.avg(stats.ops))
-                    ])
-                }
-            } header: {
-                CollapsibleHeader(title: "Slash line", isExpanded: $showSlashLine)
+            Section("Slash line") {
+                StatGrid(stats: stats)
             }
             Section {
                 if showCountingStats {
