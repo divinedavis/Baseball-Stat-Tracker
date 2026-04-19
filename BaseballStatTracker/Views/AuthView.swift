@@ -122,7 +122,7 @@ struct AuthView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "envelope.fill")
                         .font(.subheadline)
-                    Text("Sign in with email")
+                    Text("Continue with email")
                         .font(.headline)
                 }
                 .frame(maxWidth: .infinity)
