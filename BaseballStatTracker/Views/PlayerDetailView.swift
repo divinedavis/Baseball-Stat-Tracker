@@ -49,12 +49,6 @@ struct PlayerDetailView: View {
             } header: {
                 CollapsibleHeader(title: "Counting stats", isExpanded: $showCountingStats)
             }
-            if !recentEntries.isEmpty {
-                let recentStats = PlayerStats(entries: recentEntries)
-                Section("Recent form") {
-                    RecentFormMeter(stats: recentStats)
-                }
-            }
             Section {
                 DatePicker("Date", selection: $entryDate, displayedComponents: [.date, .hourAndMinute])
                 AtBatPad(playerID: current.id, date: entryDate, history: history)
@@ -63,6 +57,12 @@ struct PlayerDetailView: View {
             } footer: {
                 Text("Each tap creates a dated entry. Use Undo to reverse.")
                     .font(.caption)
+            }
+            if !recentEntries.isEmpty {
+                let recentStats = PlayerStats(entries: recentEntries)
+                Section("Recent form") {
+                    RecentFormMeter(stats: recentStats)
+                }
             }
             if !activeDays.isEmpty {
                 Section("Game log") {
