@@ -4,6 +4,7 @@ struct RootView: View {
     @EnvironmentObject private var store: PlayerStore
     @EnvironmentObject private var auth: AuthStore
     @State private var showingAdd = false
+    @AppStorage("appearance") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
     var body: some View {
         NavigationStack {
@@ -63,6 +64,13 @@ struct RootView: View {
                                     Text(email).font(.caption)
                                 }
                             }
+                        }
+                        Picker(selection: $appearanceRaw) {
+                            ForEach(AppearanceMode.allCases) { mode in
+                                Text(mode.label).tag(mode.rawValue)
+                            }
+                        } label: {
+                            Label("Appearance", systemImage: "moon")
                         }
                         Button(role: .destructive) {
                             auth.signOut()
