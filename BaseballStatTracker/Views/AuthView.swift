@@ -196,7 +196,7 @@ private struct EmailAuthSheet: View {
 
     enum Field { case name, email, password, confirm }
 
-    private let cream = Color(red: 0.97, green: 0.95, blue: 0.90)
+    private let canvas = Color.white
     private let ink = Color(red: 0.10, green: 0.10, blue: 0.12)
 
     private var passwordsMatch: Bool {
@@ -205,7 +205,7 @@ private struct EmailAuthSheet: View {
 
     var body: some View {
         ZStack {
-            cream.ignoresSafeArea()
+            canvas.ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
