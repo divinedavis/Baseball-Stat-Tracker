@@ -47,14 +47,14 @@ struct PlayerDetailView: View {
                 Text("Each tap creates a dated entry. Use Undo to reverse.")
                     .font(.caption)
             }
+            Section {
+                DatePicker("Date", selection: $entryDate, displayedComponents: [.date, .hourAndMinute])
+            }
             if !recentEntries.isEmpty {
                 let recentStats = PlayerStats(entries: recentEntries)
                 Section("Recent form") {
                     RecentFormMeter(stats: recentStats)
                 }
-            }
-            Section {
-                DatePicker("Date", selection: $entryDate, displayedComponents: [.date, .hourAndMinute])
             }
             if !activeDays.isEmpty {
                 Section("Game log") {
