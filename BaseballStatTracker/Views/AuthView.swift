@@ -29,12 +29,6 @@ struct AuthView: View {
             EmailAuthSheet()
                 .environmentObject(auth)
                 .environment(\.colorScheme, .light)
-                .presentationBackground {
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                        .overlay(Color.white.opacity(0.45))
-                        .environment(\.colorScheme, .light)
-                }
                 .presentationCornerRadius(28)
         }
     }
@@ -198,98 +192,151 @@ private struct EmailAuthSheet: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var displayName = ""
-    @State private var detent: PresentationDetent = .medium
+    @FocusState private var focused: Field?
+
+    enum Field { case name, email, password, confirm }
+
+    private let cream = Color(red: 0.97, green: 0.95, blue: 0.90)
+    private let ink = Color(red: 0.10, green: 0.10, blue: 0.12)
 
     private var passwordsMatch: Bool {
         mode == .signIn || (password == confirmPassword && !confirmPassword.isEmpty)
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Picker("Mode", selection: $mode) {
-                        Text("Sign In").tag(Mode.signIn)
-                        Text("Sign Up").tag(Mode.signUp)
-                    }
-                    .pickerStyle(.segmented)
-                    .onChange(of: mode) { _, newMode in
-                        auth.clearError()
-                        confirmPassword = ""
-                        withAnimation { detent = newMode == .signUp ? .large : .medium }
-                    }
-                }
-                .listRowBackground(Color.white.opacity(0.35))
+        ZStack {
+            cream.ignoresSafeArea()
 
-                Section("Account") {
-                    if mode == .signUp {
-                        TextField("Display name", text: $displayName)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Text("Cancel")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(ink.opacity(0.65))
+                        }
+                        Spacer()
+                    }
+                    .padding(.bottom, 24)
+
+                    Text(mode == .signIn ? "Welcome back." : "Let's get started.")
+                        .font(.subheadline)
+                        .foregroundStyle(ink.opacity(0.55))
+                        .padding(.bottom, 8)
+
+                    Text(mode == .signIn ? "Sign in to\nyour stats." : "Create your\nplayer locker.")
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundStyle(ink)
+                        .lineSpacing(-4)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 12)
+
+                    Text("Track every at-bat for every player.\nPrivate, offline, unlimited undo.")
+                        .font(.subheadline)
+                        .foregroundStyle(ink.opacity(0.55))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 28)
+
+                    VStack(spacing: 4) {
+                        if mode == .signUp {
+                            UnderlinedField(
+                                "Display name",
+                                text: $displayName,
+                                ink: ink,
+                                field: .name,
+                                focused: $focused
+                            )
                             .textContentType(.name)
                             .textInputAutocapitalization(.words)
-                    }
-                    TextField("Email", text: $email)
+                        }
+                        UnderlinedField(
+                            "Email",
+                            text: $email,
+                            ink: ink,
+                            field: .email,
+                            focused: $focused
+                        )
                         .keyboardType(.emailAddress)
                         .textContentType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    SecureField("Password", text: $password)
-                        .textContentType(mode == .signIn ? .password : .newPassword)
-                    if mode == .signUp {
-                        SecureField("Confirm password", text: $confirmPassword)
-                            .textContentType(.newPassword)
-                    }
-                }
-                .listRowBackground(Color.white.opacity(0.35))
 
-                if mode == .signUp,
-                   !confirmPassword.isEmpty,
-                   password != confirmPassword {
-                    Section {
+                        UnderlinedSecureField(
+                            "Password",
+                            text: $password,
+                            ink: ink,
+                            field: .password,
+                            focused: $focused
+                        )
+                        .textContentType(mode == .signIn ? .password : .newPassword)
+
+                        if mode == .signUp {
+                            UnderlinedSecureField(
+                                "Confirm password",
+                                text: $confirmPassword,
+                                ink: ink,
+                                field: .confirm,
+                                focused: $focused
+                            )
+                            .textContentType(.newPassword)
+                        }
+                    }
+                    .padding(.bottom, 20)
+
+                    if mode == .signUp, !confirmPassword.isEmpty, password != confirmPassword {
                         Label("Passwords don't match.", systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.red)
                             .font(.footnote)
+                            .padding(.bottom, 12)
+                    } else if let err = auth.lastError {
+                        Text(err)
+                            .foregroundStyle(.red)
+                            .font(.footnote)
+                            .padding(.bottom, 12)
                     }
-                    .listRowBackground(Color.clear)
-                } else if let err = auth.lastError {
-                    Section {
-                        Text(err).foregroundStyle(.red).font(.footnote)
+
+                    Button {
+                        submit()
+                    } label: {
+                        Text(mode == .signIn ? "Sign In" : "Create Account")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .foregroundStyle(.white)
+                            .background(Capsule().fill(ink))
                     }
-                    .listRowBackground(Color.clear)
+                    .disabled(!canSubmit)
+                    .opacity(canSubmit ? 1 : 0.4)
+                    .padding(.top, 8)
+
+                    HStack {
+                        Spacer()
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                mode = mode == .signIn ? .signUp : .signIn
+                                confirmPassword = ""
+                                auth.clearError()
+                            }
+                        } label: {
+                            Text(mode == .signIn
+                                 ? "Don't have an account? Sign up"
+                                 : "Already have an account? Sign in")
+                                .font(.footnote)
+                                .foregroundStyle(ink.opacity(0.6))
+                                .underline()
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 20)
+                    .padding(.bottom, 40)
                 }
-            }
-            .scrollContentBackground(.hidden)
-            .navigationTitle(mode == .signIn ? "Sign In" : "Create Account")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                Button {
-                    submit()
-                } label: {
-                    Text(mode == .signIn ? "Sign In" : "Create Account")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .foregroundStyle(.white)
-                        .background(
-                            Capsule().fill(
-                                LinearGradient(
-                                    colors: [.blue, .indigo],
-                                    startPoint: .leading, endPoint: .trailing
-                                )
-                            )
-                        )
-                }
-                .disabled(!canSubmit)
-                .opacity(canSubmit ? 1 : 0.5)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
+                .padding(.horizontal, 28)
+                .padding(.top, 20)
             }
         }
-        .presentationDetents([.medium, .large], selection: $detent)
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
 
@@ -301,6 +348,7 @@ private struct EmailAuthSheet: View {
     }
 
     private func submit() {
+        focused = nil
         switch mode {
         case .signIn:
             auth.signIn(email: email, password: password)
@@ -308,6 +356,78 @@ private struct EmailAuthSheet: View {
             auth.signUp(email: email, password: password, displayName: displayName)
         }
         if auth.isSignedIn { dismiss() }
+    }
+}
+
+private struct UnderlinedField: View {
+    let placeholder: String
+    @Binding var text: String
+    let ink: Color
+    let field: EmailAuthSheet.Field
+    @FocusState.Binding var focused: EmailAuthSheet.Field?
+
+    init(
+        _ placeholder: String,
+        text: Binding<String>,
+        ink: Color,
+        field: EmailAuthSheet.Field,
+        focused: FocusState<EmailAuthSheet.Field?>.Binding
+    ) {
+        self.placeholder = placeholder
+        self._text = text
+        self.ink = ink
+        self.field = field
+        self._focused = focused
+    }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            TextField(placeholder, text: $text)
+                .focused($focused, equals: field)
+                .font(.body)
+                .foregroundStyle(ink)
+                .padding(.vertical, 14)
+            Rectangle()
+                .fill(focused == field ? ink.opacity(0.6) : ink.opacity(0.2))
+                .frame(height: 1)
+                .animation(.easeInOut(duration: 0.15), value: focused)
+        }
+    }
+}
+
+private struct UnderlinedSecureField: View {
+    let placeholder: String
+    @Binding var text: String
+    let ink: Color
+    let field: EmailAuthSheet.Field
+    @FocusState.Binding var focused: EmailAuthSheet.Field?
+
+    init(
+        _ placeholder: String,
+        text: Binding<String>,
+        ink: Color,
+        field: EmailAuthSheet.Field,
+        focused: FocusState<EmailAuthSheet.Field?>.Binding
+    ) {
+        self.placeholder = placeholder
+        self._text = text
+        self.ink = ink
+        self.field = field
+        self._focused = focused
+    }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            SecureField(placeholder, text: $text)
+                .focused($focused, equals: field)
+                .font(.body)
+                .foregroundStyle(ink)
+                .padding(.vertical, 14)
+            Rectangle()
+                .fill(focused == field ? ink.opacity(0.6) : ink.opacity(0.2))
+                .frame(height: 1)
+                .animation(.easeInOut(duration: 0.15), value: focused)
+        }
     }
 }
 
