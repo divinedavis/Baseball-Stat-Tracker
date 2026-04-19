@@ -382,6 +382,7 @@ struct AtBatPad: View {
             undo: { [weak store] in store?.deleteAtBat(id: entry.id) },
             redo: { [weak store] in store?.atBats.append(entry) }
         )
+        contact = nil
     }
 }
 
