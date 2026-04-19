@@ -271,6 +271,14 @@ private struct EmailAuthSheet: View {
                             focused: $focused
                         )
                         .textContentType(mode == .signIn ? .password : .newPassword)
+                        .submitLabel(mode == .signIn ? (canSubmit ? .go : .return) : .next)
+                        .onSubmit {
+                            if mode == .signIn {
+                                if canSubmit { submit() }
+                            } else {
+                                focused = .confirm
+                            }
+                        }
 
                         if mode == .signUp {
                             UnderlinedSecureField(
@@ -281,6 +289,10 @@ private struct EmailAuthSheet: View {
                                 focused: $focused
                             )
                             .textContentType(.newPassword)
+                            .submitLabel(canSubmit ? .join : .return)
+                            .onSubmit {
+                                if canSubmit { submit() }
+                            }
                         }
                     }
                     .padding(.bottom, 20)
