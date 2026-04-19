@@ -40,7 +40,6 @@ struct PlayerDetailView: View {
                 CollapsibleHeader(title: "Counting stats", isExpanded: $showCountingStats)
             }
             Section {
-                DatePicker("Date", selection: $entryDate, displayedComponents: [.date, .hourAndMinute])
                 AtBatPad(playerID: current.id, date: entryDate, history: history)
             } header: {
                 Text("Record an at-bat")
@@ -53,6 +52,9 @@ struct PlayerDetailView: View {
                 Section("Recent form") {
                     RecentFormMeter(stats: recentStats)
                 }
+            }
+            Section {
+                DatePicker("Date", selection: $entryDate, displayedComponents: [.date, .hourAndMinute])
             }
             if !activeDays.isEmpty {
                 Section("Game log") {
