@@ -55,18 +55,34 @@ final class PlayerStore: ObservableObject {
 
     // MARK: - At-bats
 
+    @discardableResult
     func recordAtBat(
         for playerID: Player.ID,
         outcome: AtBatOutcome,
         contact: ContactQuality? = nil,
         at date: Date = .now
-    ) {
-        atBats.append(AtBatEntry(
+    ) -> AtBatEntry {
+        let entry = AtBatEntry(
             playerID: playerID,
             date: date,
             outcome: outcome,
             contact: contact
-        ))
+        )
+        atBats.append(entry)
+        scheduleSave()
+        return entry
+    }
+
+    /// Re-insert a previously removed entry (used by undo paths).
+    func restore(_ entry: AtBatEntry) {
+        atBats.append(entry)
+        scheduleSave()
+    }
+
+    /// Bulk restore — single save after the batch.
+    func restore(_ entries: [AtBatEntry]) {
+        guard !entries.isEmpty else { return }
+        atBats.append(contentsOf: entries)
         scheduleSave()
     }
 
@@ -111,16 +127,17 @@ final class PlayerStore: ObservableObject {
     // MARK: - Persistence
 
     private func load() {
+        let decoder = jsonDecoder()
         if let data = try? Data(contentsOf: playersURL),
-           let decoded = try? JSONDecoder().decode([Player].self, from: data) {
+           let decoded = try? decoder.decode([Player].self, from: data) {
             players = decoded
         }
         if let data = try? Data(contentsOf: atBatsURL),
-           let decoded = try? jsonDecoder().decode([AtBatEntry].self, from: data) {
+           let decoded = try? decoder.decode([AtBatEntry].self, from: data) {
             atBats = decoded
         }
         if let data = try? Data(contentsOf: teamsURL),
-           let decoded = try? JSONDecoder().decode([String].self, from: data) {
+           let decoded = try? decoder.decode([String].self, from: data) {
             teams = decoded
         }
         // Back-fill teams from any existing players that pre-date the teams store.
@@ -140,13 +157,14 @@ final class PlayerStore: ObservableObject {
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(players) {
+        let encoder = jsonEncoder()
+        if let data = try? encoder.encode(players) {
             try? data.write(to: playersURL, options: [.atomic])
         }
-        if let data = try? jsonEncoder().encode(atBats) {
+        if let data = try? encoder.encode(atBats) {
             try? data.write(to: atBatsURL, options: [.atomic])
         }
-        if let data = try? JSONEncoder().encode(teams) {
+        if let data = try? encoder.encode(teams) {
             try? data.write(to: teamsURL, options: [.atomic])
         }
     }

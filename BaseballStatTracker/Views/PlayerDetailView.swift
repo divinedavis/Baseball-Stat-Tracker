@@ -16,7 +16,12 @@ struct PlayerDetailView: View {
     private var stats: PlayerStats { store.stats(for: current.id) }
     private var activeDays: [Date] { store.activeDays(for: current.id) }
     private var recentEntries: [AtBatEntry] {
-        Array(store.entries(for: current.id).prefix(5))
+        Array(
+            store.entries(for: current.id)
+                .lazy
+                .filter { $0.outcome.countsAsAtBat }
+                .prefix(5)
+        )
     }
 
     var body: some View {
@@ -101,12 +106,7 @@ struct PlayerDetailView: View {
             store.deleteAtBat(id: entry.id)
         }
         history.register(
-            undo: { [weak store] in
-                guard let store else { return }
-                for entry in removed {
-                    store.atBats.append(entry)
-                }
-            },
+            undo: { [weak store] in store?.restore(removed) },
             redo: { [weak store] in
                 guard let store else { return }
                 for entry in removed {
@@ -358,16 +358,15 @@ struct AtBatPad: View {
     }
 
     private func record(_ outcome: AtBatOutcome) {
-        let entry = AtBatEntry(
-            playerID: playerID,
-            date: date,
+        let entry = store.recordAtBat(
+            for: playerID,
             outcome: outcome,
-            contact: contact
+            contact: contact,
+            at: date
         )
-        store.atBats.append(entry)
         history.register(
             undo: { [weak store] in store?.deleteAtBat(id: entry.id) },
-            redo: { [weak store] in store?.atBats.append(entry) }
+            redo: { [weak store] in store?.restore(entry) }
         )
         contact = nil
     }
@@ -448,7 +447,7 @@ struct DayLogRow: View {
     private func remove(_ entry: AtBatEntry) {
         store.deleteAtBat(id: entry.id)
         history.register(
-            undo: { [weak store] in store?.atBats.append(entry) },
+            undo: { [weak store] in store?.restore(entry) },
             redo: { [weak store] in store?.deleteAtBat(id: entry.id) }
         )
     }
