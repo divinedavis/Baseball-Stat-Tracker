@@ -50,7 +50,34 @@ If the push fails (repo doesn't exist, no auth, network), **stop and surface it 
 
 One meaningful commit per logical change. Don't batch unrelated edits.
 
-## 2. TestFlight ship pipeline
+---
+
+## ⚑ Rule #2: KEEP THIS FILE LOADED WITH IMPORTANT INFORMATION
+
+**Treat this file as the long-term memory for the project.** At the end of any session — or any time you learn something that would save a future session from re-discovering it — stop and ask: *is this worth writing down here?*
+
+### What counts as "important information"
+
+- **Gotchas and workarounds** — Apple API quirks (e.g. `POST /v1/apps` 403), simulator-only artifacts (Apple error 1000 on no-Apple-ID), provisioning / entitlement traps.
+- **Invariants that aren't obvious from the code** — "slash line is locked open," "team field was intentionally removed," "`AtBatOutcome.stolenBase` does not increment AB," "`kSecAttrAccessibleAfterFirstUnlock` is chosen so sessions survive reinstall."
+- **Cross-project distinctions** — this repo is *Baseball Stat Tracker* (`com.divinedavis.BaseballStatTracker`, ASC id `6762527182`, name "Bball Tracker"). Not Hidden Gems, not Clock-In, not ShypQuick, not HomeFinder NYC, not Polinear, not caprecruiting. The user keeps multiple iOS apps on their desktop; always confirm the working directory before diagnosing "doesn't work" reports.
+- **Script behavior that's not self-evident** — what `ship-to-testflight.sh` bumps, what the `--auto-notes` flag does, the `scripts/.last-shipped-commit` marker, the fact that parallel ships deadlock if you queue them with `pgrep -f ship-to-testflight.sh` (the waiter matches itself).
+- **Deliberate design calls the user made** — per-change TestFlight ships vs hourly cron, white auth sheet over cream, appearance picker in profile menu not detail view, silently swallowing Apple cancel errors.
+- **Anything you had to read multiple files to figure out.** If the answer wasn't in this file, write it in.
+
+### What *not* to put here
+
+- Code snippets that mirror current source — the code is the source of truth. Reference file paths, not copies.
+- Ephemeral task state — that's what commits and PR descriptions are for.
+- Anything secret (see Rule #0).
+
+### When in doubt
+
+If you spent more than ~30 seconds figuring something out this session that another run will also need, it belongs here.
+
+---
+
+## 3. TestFlight ship pipeline
 
 The ship pipeline (`scripts/ship-to-testflight.sh`) bumps `CURRENT_PROJECT_VERSION` by 1, regenerates the Xcode project, archives Release, exports, uploads via `altool`, and polls App Store Connect until the build is processed — then sets the "What to Test" notes from the git log.
 
@@ -122,7 +149,7 @@ scripts/ship-to-testflight.sh --marketing 1.1 "Release notes here"
 scripts/uninstall-testflight-cron.sh
 ```
 
-## 3. App icon
+## 4. App icon
 
 The placeholder at `BaseballStatTracker/Assets.xcassets/AppIcon.appiconset/AppIcon.png` is a vector silhouette. Replace it with a 1024×1024 photorealistic render in the Apple Liquid Glass style.
 
@@ -132,7 +159,7 @@ Suggested prompt for Midjourney / DALL·E / Firefly:
 
 Save the result as `BaseballStatTracker/Assets.xcassets/AppIcon.appiconset/AppIcon.png` (exactly that filename; the Contents.json already references it). Commit and push — the next hourly build will ship the new icon.
 
-## 4. Project structure
+## 5. Project structure
 
 ```
 Baseball-Stat-Tracker/
