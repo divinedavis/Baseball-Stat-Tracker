@@ -37,6 +37,11 @@ struct BaseballStatTrackerApp: App {
                 .environmentObject(store)
                 .environmentObject(auth)
                 .preferredColorScheme(appearance.colorScheme)
+                .onAppear {
+                    #if DEBUG
+                    DemoSeeder.seedIfRequested(store: store, auth: auth)
+                    #endif
+                }
         }
     }
 }

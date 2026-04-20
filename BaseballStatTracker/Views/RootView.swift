@@ -4,10 +4,11 @@ struct RootView: View {
     @EnvironmentObject private var store: PlayerStore
     @EnvironmentObject private var auth: AuthStore
     @State private var showingAdd = false
+    @State private var path = NavigationPath()
     @AppStorage("appearance") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if store.players.isEmpty {
                     ContentUnavailableView(
@@ -90,6 +91,15 @@ struct RootView: View {
             .sheet(isPresented: $showingAdd) {
                 AddPlayerView()
             }
+            #if DEBUG
+            .task {
+                if CommandLine.arguments.contains("-demoOpenDetail"),
+                   let first = store.players.first,
+                   path.isEmpty {
+                    path.append(first.id)
+                }
+            }
+            #endif
         }
     }
 

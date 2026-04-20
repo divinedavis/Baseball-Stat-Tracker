@@ -163,6 +163,18 @@ final class AuthStore: ObservableObject {
         KeychainStore.delete(account: sessionAccount)
     }
 
+    #if DEBUG
+    /// Bypasses the auth sheet so `-demoSeed` can produce README screenshots.
+    func signInDemo() {
+        persist(AuthUser(
+            method: .email,
+            identifier: "coach@example.com",
+            displayName: "Coach Davis",
+            email: "coach@example.com"
+        ))
+    }
+    #endif
+
     func clearError() { lastError = nil }
 
     // MARK: - Credential storage
