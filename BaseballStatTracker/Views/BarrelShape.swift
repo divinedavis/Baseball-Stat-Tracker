@@ -12,8 +12,8 @@ import SwiftUI
 /// to control the rendered size; the shape handles any overflow internally.
 struct BarrelShape: Shape {
     var tiltDeg: Double = 5.0
-    var thickFrac: Double = 0.16
-    var thinFrac: Double = 0.04
+    var thickFrac: Double = 0.32
+    var thinFrac: Double = 0.08
     var arcSteps: Int = 36
 
     func path(in rect: CGRect) -> Path {
@@ -95,7 +95,7 @@ struct BarrelBadge: View {
                 .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
             BarrelShape()
                 .stroke(barrelColor, style: StrokeStyle(lineWidth: lineWidth, lineJoin: .round))
-                .aspectRatio(5.2, contentMode: .fit)
+                .aspectRatio(3.0, contentMode: .fit)
                 .padding(.horizontal, 6)
         }
         .frame(width: 46, height: 46)

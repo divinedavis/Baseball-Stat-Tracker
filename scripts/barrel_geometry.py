@@ -15,11 +15,12 @@ from __future__ import annotations
 
 import math
 
-# Defaults matched against the brand-guide reference:
-# thick_height ≈ 16% of the bat's horizontal extent,
-# thin_height  ≈ 4%   (so the tip cap is ~25% the diameter of the thick cap).
-DEFAULT_THICK_H_FRAC = 0.16
-DEFAULT_THIN_H_FRAC = 0.04
+# Defaults matched against the product-brand reference (2026-04-21 update):
+# thick_height ≈ 32% of the bat's horizontal extent,
+# thin_height  ≈ 8%   (so the tip cap is ~25% the diameter of the thick cap,
+# and the overall mark is 100% thicker than the earlier brand-guide draft).
+DEFAULT_THICK_H_FRAC = 0.32
+DEFAULT_THIN_H_FRAC = 0.08
 DEFAULT_TILT_DEG = 5.0
 
 
@@ -30,7 +31,7 @@ def build_barrel_polygon(
     thick_h_frac: float = DEFAULT_THICK_H_FRAC,
     thin_h_frac: float = DEFAULT_THIN_H_FRAC,
     tilt_deg: float = DEFAULT_TILT_DEG,
-    arc_steps: int = 36,
+    arc_steps: int = 72,
 ) -> list[tuple[float, float]]:
     """Return a closed polygon approximating the barrel shape.
 
