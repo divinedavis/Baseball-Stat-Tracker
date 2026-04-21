@@ -143,7 +143,7 @@ def api(method: str, path: str, token: str, body=None, raw_body=None, headers=No
             raw = r.read()
             return r.status, (json.loads(raw) if raw and r.headers.get("content-type", "").startswith("application/") else raw)
     except urllib.error.HTTPError as e:
-        body_text = e.read().decode(errors="replace")[:1200]
+        body_text = e.read().decode(errors="replace")[:6000]
         return e.code, {"error": body_text}
 
 
