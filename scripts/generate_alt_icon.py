@@ -35,10 +35,10 @@ def render(size: int) -> Image.Image:
     )
     stroke = max(3, size // 72)
     draw.line(pts + [pts[0]], fill=INK, width=stroke, joint="curve")
-    # Text size scales proportionally with the canvas (148 at 1024).
-    size_px = max(12, int(size * 148 / 1024))
+    # Text size scales proportionally with the canvas (112 at 1024).
+    size_px = max(12, int(size * 112 / 1024))
     draw_wordmark(draw, canvas_w=size, cy=int(size * WORDMARK_CY_FRAC),
-                  size_px=size_px, fill=INK)
+                  size_px=size_px, fill=INK, bg=GOLD)
     return img
 
 

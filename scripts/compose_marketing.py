@@ -90,13 +90,26 @@ def draw_wordmark(draw: ImageDraw.ImageDraw, top: int):
     total_w = text_w + gap + mark_w
 
     x = (W - total_w) // 2
-    # Draw BARREL in white with wide letter spacing
+    # Draw BARREL in white with wide letter spacing. The 'A' gets its
+    # horizontal crossbar knocked out so the letter reads as an open peak.
     letter_spacing = 8
     cursor = x
+    ascent, descent = font.getmetrics()
+    cap_h = ascent - descent // 2
+    baseline_y = top + ascent
     for ch in text:
         draw.text((cursor, top), ch, font=font, fill=(255, 255, 255, 255))
         cb = draw.textbbox((0, 0), ch, font=font)
-        cursor += (cb[2] - cb[0]) + letter_spacing
+        ch_w = cb[2] - cb[0]
+        if ch == "A":
+            bar_y_center = baseline_y - int(cap_h * 0.42)
+            half_thick = max(2, int(cap_h * 0.085))
+            draw.rectangle(
+                (cursor + int(ch_w * 0.16), bar_y_center - half_thick,
+                 cursor + int(ch_w * 0.84), bar_y_center + half_thick),
+                fill=BG,
+            )
+        cursor += ch_w + letter_spacing
 
     mark_cx = cursor + gap + mark_w // 2 - letter_spacing
     mark_cy = top + text_h // 2 + 6
