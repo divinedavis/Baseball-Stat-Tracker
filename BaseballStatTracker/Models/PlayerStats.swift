@@ -13,6 +13,8 @@ struct PlayerStats: Equatable {
     var flyOuts: Int = 0
     var lineOuts: Int = 0
     var stolenBases: Int = 0
+    var reachedOnErrors: Int = 0
+    var bunts: Int = 0
 
     init(entries: some Sequence<AtBatEntry>) {
         for entry in entries {
@@ -46,6 +48,10 @@ struct PlayerStats: Equatable {
             stolenBases += 1
         case .rbi:
             runsBattedIn += 1
+        case .reachedOnError:
+            atBats += 1; reachedOnErrors += 1
+        case .bunt:
+            bunts += 1
         }
     }
 

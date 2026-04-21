@@ -187,23 +187,26 @@ enum AtBatOutcome: String, CaseIterable, Identifiable, Codable {
     case walk, strikeout
     case groundOut, flyOut, lineOut, out
     case stolenBase, rbi
+    case reachedOnError, bunt
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .single: return "1B"
-        case .double: return "2B"
-        case .triple: return "3B"
-        case .homeRun: return "HR"
-        case .walk: return "BB"
+        case .single: return "+1B"
+        case .double: return "+2B"
+        case .triple: return "+3B"
+        case .homeRun: return "+HR"
+        case .walk: return "+BB"
         case .strikeout: return "K"
         case .groundOut: return "GO"
         case .flyOut: return "FO"
         case .lineOut: return "LO"
         case .out: return "OUT"
-        case .stolenBase: return "SB"
+        case .stolenBase: return "+SB"
         case .rbi: return "+RBI"
+        case .reachedOnError: return "+ROE"
+        case .bunt: return "+BU"
         }
     }
 
@@ -215,10 +218,10 @@ enum AtBatOutcome: String, CaseIterable, Identifiable, Codable {
     }
 
     /// Whether this outcome counts as an official at-bat (AB).
-    /// Walks, stolen bases, and RBI-only adjustments do not.
+    /// Walks, stolen bases, RBI-only adjustments, and bunts do not.
     var countsAsAtBat: Bool {
         switch self {
-        case .walk, .stolenBase, .rbi: return false
+        case .walk, .stolenBase, .rbi, .bunt: return false
         default: return true
         }
     }

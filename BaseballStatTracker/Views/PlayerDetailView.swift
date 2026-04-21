@@ -355,7 +355,7 @@ struct AtBatPad: View {
     private let outcomes: [AtBatOutcome] = [
         .single, .double, .triple, .homeRun,
         .walk, .strikeout, .stolenBase, .rbi,
-        .groundOut, .flyOut, .lineOut, .out
+        .groundOut, .reachedOnError, .lineOut, .bunt
     ]
 
     var body: some View {
