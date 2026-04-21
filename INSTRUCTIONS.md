@@ -52,6 +52,56 @@ One meaningful commit per logical change. Don't batch unrelated edits.
 
 ---
 
+## ⚑ Rule #1b: UI CHANGES → RECAPTURE + RE-UPLOAD SCREENSHOTS
+
+**If the change is visible in the app, the App Store listing's screenshots
+must be updated in the same turn.** Stale screenshots mean the store page
+shows a different app than what TestFlight / production ships.
+
+Applies to any diff that could alter a marketing-relevant screen: roster,
+player detail (top stats + counting stats + at-bat pad + game log),
+auth splash, empty state, accent color, typography, icon. Bug fixes that
+don't change visible pixels are exempt.
+
+```bash
+# 1. capture fresh raw sim screens (6.9" — iPhone 17 Pro Max)
+BUNDLE=com.divinedavis.BaseballStatTracker
+APP="$(xcodebuild -project BaseballStatTracker.xcodeproj \
+  -showBuildSettings -configuration Debug -sdk iphonesimulator 2>/dev/null \
+  | awk -F ' = ' '/ BUILT_PRODUCTS_DIR/{print $2}')/BaseballStatTracker.app"
+xcrun simctl terminate booted "$BUNDLE" 2>/dev/null
+xcrun simctl uninstall booted "$BUNDLE" 2>/dev/null
+xcrun simctl install booted "$APP"
+xcrun simctl status_bar booted override --time "9:41" --dataNetwork wifi \
+  --wifiBars 3 --cellularMode active --cellularBars 4 \
+  --batteryState charged --batteryLevel 100
+RAW=docs/marketing/raw
+for args in "01_roster.png:-demoSeed" \
+            "02_detail_top.png:-demoSeed -demoOpenDetail" \
+            "03_expanded_stats.png:-demoSeed -demoOpenDetail -demoExpandStats" \
+            "04_game_log.png:-demoSeed -demoOpenDetail -demoExpandStats -demoScrollGameLog"; do
+  name="${args%%:*}"; flags="${args#*:}"
+  xcrun simctl terminate booted "$BUNDLE" 2>/dev/null; sleep 0.3
+  xcrun simctl launch booted "$BUNDLE" $flags >/dev/null
+  sleep 2.2
+  xcrun simctl io booted screenshot "$RAW/$name" >/dev/null
+done
+
+# 2. re-composite marketing frames (writes 6.9/ + 6.5/ sets)
+python3 scripts/compose_marketing.py
+
+# 3. re-upload to ASC (tears down + rebuilds both display sizes)
+scripts/asc_publish_metadata.py
+```
+
+Ship the new TestFlight build in the same commit (Rule #1). If version
+1.0 is in `WAITING_FOR_REVIEW` or `IN_REVIEW`, screenshot updates via the
+API return `409 INVALID_STATE` — hold the recapture for the next editable
+version (1.1), but still regenerate the raw + composed files locally and
+commit them so the repo stays in lockstep with the UI.
+
+---
+
 ## ⚑ Rule #2: KEEP THIS FILE LOADED WITH IMPORTANT INFORMATION
 
 **Treat this file as the long-term memory for the project.** At the end of any session — or any time you learn something that would save a future session from re-discovering it — stop and ask: *is this worth writing down here?*
