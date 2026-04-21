@@ -88,6 +88,15 @@ SCREENSHOTS = [
     ("APP_IPHONE_65", ROOT / "docs" / "marketing" / "6.5", ["01_roster.png", "02_detail_top.png", "03_expanded_stats.png", "04_game_log.png"]),
 ]
 
+# Quirk: app previews use IPHONE_67 / IPHONE_65 (no APP_ prefix) — different
+# from the screenshot enum. The 886x1920 H.264 file is accepted for both, so
+# we upload the same asset to both sets rather than maintaining two copies.
+PREVIEW_FILE = ROOT / "docs" / "marketing" / "preview" / "bst_preview_886x1920.mov"
+PREVIEWS = [
+    ("IPHONE_67", PREVIEW_FILE),
+    ("IPHONE_65", PREVIEW_FILE),
+]
+
 
 def load_env(path: Path) -> dict:
     env = {}
@@ -295,6 +304,111 @@ def upload_screenshot(set_id: str, file_path: Path, token: str) -> None:
     require(status, d, f"commit upload for {file_path.name}")
 
 
+# ---------- app previews (videos) ----------
+
+def list_preview_sets(loc_id: str, token: str) -> list:
+    status, d = api("GET", f"/v1/appStoreVersionLocalizations/{loc_id}/appPreviewSets", token)
+    require(status, d, "list preview sets")
+    return d.get("data", [])
+
+
+def delete_preview_set(set_id: str, token: str):
+    status, d = api("DELETE", f"/v1/appPreviewSets/{set_id}", token)
+    if status >= 300 and status != 404:
+        raise SystemExit(f"failed to delete preview set {set_id} (status {status}): {d}")
+
+
+def create_preview_set(loc_id: str, display_type: str, token: str) -> str:
+    body = {
+        "data": {
+            "type": "appPreviewSets",
+            "attributes": {"previewType": display_type},
+            "relationships": {
+                "appStoreVersionLocalization": {
+                    "data": {"type": "appStoreVersionLocalizations", "id": loc_id}
+                }
+            },
+        }
+    }
+    status, d = api("POST", "/v1/appPreviewSets", token, body)
+    require(status, d, f"create preview set {display_type}")
+    return d["data"]["id"]
+
+
+def upload_preview(set_id: str, file_path: Path, token: str) -> str:
+    data = file_path.read_bytes()
+    size = len(data)
+    mime = "video/quicktime" if file_path.suffix.lower() == ".mov" else "video/mp4"
+    body = {
+        "data": {
+            "type": "appPreviews",
+            "attributes": {
+                "fileName": file_path.name,
+                "fileSize": size,
+                "mimeType": mime,
+            },
+            "relationships": {
+                "appPreviewSet": {"data": {"type": "appPreviewSets", "id": set_id}}
+            },
+        }
+    }
+    status, d = api("POST", "/v1/appPreviews", token, body)
+    require(status, d, f"reserve upload for {file_path.name}")
+    preview_id = d["data"]["id"]
+    ops = d["data"]["attributes"]["uploadOperations"]
+    for op in ops:
+        offset = op["offset"]
+        length = op["length"]
+        chunk = data[offset:offset + length]
+        req_headers = {h["name"]: h["value"] for h in op.get("requestHeaders", [])}
+        req = urllib.request.Request(
+            op["url"], data=chunk, method=op["method"], headers=req_headers,
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                r.read()
+        except urllib.error.HTTPError as e:
+            raise SystemExit(
+                f"preview chunk upload failed ({file_path.name}, offset {offset}): "
+                f"status {e.code}, body {e.read().decode(errors='replace')[:400]}"
+            )
+    md5 = hashlib.md5(data).hexdigest()
+    body = {
+        "data": {
+            "type": "appPreviews",
+            "id": preview_id,
+            "attributes": {"uploaded": True, "sourceFileChecksum": md5},
+        }
+    }
+    status, d = api("PATCH", f"/v1/appPreviews/{preview_id}", token, body)
+    require(status, d, f"commit upload for {file_path.name}")
+    return preview_id
+
+
+def publish_previews(loc_id: str, token: str, dry: bool):
+    existing = list_preview_sets(loc_id, token)
+    by_type = {s["attributes"]["previewType"]: s["id"] for s in existing}
+
+    for display_type, file_path in PREVIEWS:
+        if not file_path.exists():
+            raise SystemExit(f"missing preview file: {file_path}")
+
+        if dry:
+            print(f"  [dry] would replace {display_type} preview with {file_path.name}")
+            continue
+
+        if display_type in by_type:
+            old_id = by_type[display_type]
+            print(f"  removing prior {display_type} preview set {old_id}")
+            delete_preview_set(old_id, token)
+
+        set_id = create_preview_set(loc_id, display_type, token)
+        print(f"  created {display_type} preview set {set_id}")
+        preview_id = upload_preview(set_id, file_path, token)
+        kb = file_path.stat().st_size // 1024
+        print(f"    ↳ uploaded {file_path.name} ({kb} KB) as {preview_id}")
+
+
 def publish_screenshots(loc_id: str, token: str, dry: bool):
     existing = list_screenshot_sets(loc_id, token)
     by_type = {s["attributes"]["screenshotDisplayType"]: s["id"] for s in existing}
@@ -326,6 +440,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--no-upload", action="store_true", help="skip screenshot upload, metadata only")
     p.add_argument("--no-metadata", action="store_true", help="skip metadata patches, screenshots only")
+    p.add_argument("--no-previews", action="store_true", help="skip app preview video upload")
+    p.add_argument("--previews-only", action="store_true", help="only upload app previews")
     p.add_argument("--dry-run", action="store_true", help="print intended actions without hitting ASC")
     args = p.parse_args()
 
@@ -350,14 +466,22 @@ def main():
     loc_id = loc["id"]
     print(f"  {LOCALE} localization {loc_id}")
 
-    if not args.no_metadata:
+    do_metadata = not (args.no_metadata or args.previews_only)
+    do_screenshots = not (args.no_upload or args.previews_only)
+    do_previews = not args.no_previews
+
+    if do_metadata:
         print("▸ patching metadata")
         patch_localization(loc_id, token, args.dry_run)
         patch_version_copyright(version_id, token, args.dry_run)
 
-    if not args.no_upload:
+    if do_screenshots:
         print("▸ publishing screenshots")
         publish_screenshots(loc_id, token, args.dry_run)
+
+    if do_previews:
+        print("▸ publishing app previews")
+        publish_previews(loc_id, token, args.dry_run)
 
     print("✓ done")
 

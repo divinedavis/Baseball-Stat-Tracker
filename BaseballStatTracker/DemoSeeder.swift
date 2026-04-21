@@ -6,11 +6,22 @@ import Foundation
 @MainActor
 enum DemoSeeder {
     static func seedIfRequested(store: PlayerStore, auth: AuthStore) {
-        guard CommandLine.arguments.contains("-demoSeed") else { return }
+        let wantsSeed = CommandLine.arguments.contains("-demoSeed")
+        let wantsEmpty = CommandLine.arguments.contains("-demoSeedEmpty")
+        guard wantsSeed || wantsEmpty else { return }
 
         if !auth.isSignedIn { auth.signInDemo() }
 
         guard store.players.isEmpty else { return }
+
+        // -demoSeedEmpty builds a roster but leaves every player at 0 at-bats
+        // so the app-preview video can animate the slash line climbing from --.
+        if wantsEmpty {
+            store.addPlayer(Player(name: "Jordan Davis", number: 7, position: "CF", age: 10, team: "Thunder"))
+            store.addPlayer(Player(name: "Micah Lee",    number: 12, position: "SS", age: 11, team: "Thunder"))
+            store.addPlayer(Player(name: "Ari Chen",     number: 3,  position: "2B", age: 9,  team: "Thunder"))
+            return
+        }
 
         let jordan = Player(name: "Jordan Davis", number: 7, position: "CF", age: 10, team: "Thunder")
         let micah  = Player(name: "Micah Lee",    number: 12, position: "SS", age: 11, team: "Thunder")

@@ -82,6 +82,9 @@ struct PlayerDetailView: View {
                     proxy.scrollTo("gamelog", anchor: .top)
                 }
             }
+            if CommandLine.arguments.contains("-demoPreview") {
+                await runPreviewSequence()
+            }
         }
         #endif
         }
@@ -132,6 +135,31 @@ struct PlayerDetailView: View {
             }
         )
     }
+
+    #if DEBUG
+    /// Drives the scripted App Preview recording. Plays a 1B → 2B → HR reveal,
+    /// pauses on the climbed slash line, then unwinds via undo so the whole
+    /// demo ends back at the empty state it started from.
+    @MainActor
+    private func runPreviewSequence() async {
+        let id = current.id
+        let s = store
+        let sleep = { (sec: Double) in
+            try? await Task.sleep(nanoseconds: UInt64(sec * 1_000_000_000))
+        }
+
+        await sleep(2.4)                                       // land on empty slash
+        let a = s.recordAtBat(for: id, outcome: .single,  contact: .strong)
+        await sleep(2.1)
+        let b = s.recordAtBat(for: id, outcome: .double,  contact: .strong)
+        await sleep(2.1)
+        let c = s.recordAtBat(for: id, outcome: .homeRun, contact: .strong)
+        await sleep(4.0)                                       // savor the climb
+        s.deleteAtBat(id: c.id); await sleep(1.9)
+        s.deleteAtBat(id: b.id); await sleep(1.9)
+        s.deleteAtBat(id: a.id); await sleep(2.0)
+    }
+    #endif
 }
 
 // MARK: - Stat grids
