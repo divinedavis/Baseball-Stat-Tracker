@@ -63,7 +63,7 @@ struct NumberBadge: View {
             .frame(width: 40, height: 40)
             .background(
                 LinearGradient(
-                    colors: [.blue, .indigo],
+                    colors: [Color("AccentColor"), Color("AccentColor").opacity(0.75)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 ),

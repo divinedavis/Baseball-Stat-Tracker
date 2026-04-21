@@ -38,9 +38,9 @@ struct AuthView: View {
             stops: [
                 .init(color: .white, location: 0.0),
                 .init(color: .white, location: 0.38),
-                .init(color: Color(red: 0.78, green: 0.90, blue: 1.0), location: 0.52),
-                .init(color: Color(red: 0.20, green: 0.52, blue: 0.96), location: 0.78),
-                .init(color: Color(red: 0.10, green: 0.35, blue: 0.88), location: 1.0)
+                .init(color: Color(red: 0.97, green: 0.93, blue: 0.82), location: 0.55),
+                .init(color: Color(red: 212/255, green: 175/255, blue: 55/255), location: 0.82),
+                .init(color: Color(red: 146/255, green: 118/255, blue: 32/255), location: 1.0)
             ],
             startPoint: .top,
             endPoint: .bottom
@@ -159,8 +159,13 @@ private struct HeroIcon: View {
     private func bar(height: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 2, style: .continuous)
             .fill(
-                LinearGradient(colors: [Color.orange, Color(red: 1, green: 0.42, blue: 0.2)],
-                               startPoint: .top, endPoint: .bottom)
+                LinearGradient(
+                    colors: [
+                        Color(red: 212/255, green: 175/255, blue: 55/255),
+                        Color(red: 146/255, green: 118/255, blue: 32/255)
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
             )
             .frame(width: 6, height: height)
     }
@@ -170,13 +175,12 @@ private struct AppBadge: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.white)
-                .shadow(color: .black.opacity(0.15), radius: 6, y: 2)
-            Image(systemName: "baseball.fill")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(
-                    LinearGradient(colors: [.blue, .indigo], startPoint: .top, endPoint: .bottom)
-                )
+                .fill(Color(red: 10/255, green: 10/255, blue: 12/255))
+                .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
+            BarrelShape()
+                .stroke(Color("AccentColor"), style: StrokeStyle(lineWidth: 2.6, lineJoin: .round))
+                .aspectRatio(4.2, contentMode: .fit)
+                .padding(.horizontal, 6)
         }
         .frame(width: 46, height: 46)
     }

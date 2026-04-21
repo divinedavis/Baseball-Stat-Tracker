@@ -2,16 +2,18 @@
 """Composite App Store marketing screenshots from raw simulator captures.
 
 Input:  docs/marketing/raw/*.png  (1320x2868 PNG from xcrun simctl)
-Output: docs/marketing/6.9/*.png  (1320x2868 with headline + subtitle)
+Output: docs/marketing/6.9/*.png  (1320x2868 with wordmark + headline)
         docs/marketing/6.5/*.png  (1284x2778 resized)
 
-Style is inspired by the "Explore" marketing frame:
-  - Deep charcoal background
-  - Large white headline at top
-  - Lighter subtitle below
-  - Phone screenshot centered, rounded corners
+BARREL brand palette:
+  - Canvas near-black (#0A0A0C)
+  - Headline white (Georgia Bold Italic)
+  - Subtitle gold (#D4AF37)
+  - BARREL wordmark + barrel mark centered at top of each frame
 """
 from __future__ import annotations
+
+import math
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
@@ -25,20 +27,22 @@ OUT_65.mkdir(parents=True, exist_ok=True)
 # 6.9" App Store required pixel size (iPhone 17 Pro Max, 16 Pro Max)
 W, H = 1320, 2868
 
-BG = (10, 10, 12, 255)              # near-black canvas
-CARD = (26, 26, 28, 255)            # dark rounded container
+BG = (10, 10, 12, 255)              # near-black canvas #0A0A0C
+CARD = (22, 22, 24, 255)            # slightly-lifted inner card
 HEADLINE = (255, 255, 255, 255)     # pure white
-SUBTITLE = (235, 235, 240, 255)     # near-white
-SHADOW = (0, 0, 0, 180)             # phone dropshadow
+SUBTITLE = (212, 175, 55, 255)      # BARREL gold #D4AF37
+GOLD = (212, 175, 55, 255)
+SHADOW = (0, 0, 0, 200)
 
 HEAD_FONT = "/System/Library/Fonts/Supplemental/Georgia Bold Italic.ttf"
 SUB_FONT = "/System/Library/Fonts/SFNS.ttf"
+WORDMARK_FONT = "/System/Library/Fonts/HelveticaNeue.ttc"
 
 SCREENS = [
-    ("01_roster.png",         "Your lineup",       "Every player,\nevery stat, at a glance"),
-    ("02_detail_top.png",     "One tap at-bats",   "Log hits, walks, strikeouts\nin a single tap"),
-    ("03_expanded_stats.png", "Every number",      "AVG, OBP, SLG, OPS —\nlive as you play"),
-    ("04_game_log.png",       "Every game kept",   "Scroll back through\nevery at-bat, every day"),
+    ("01_roster.png",         "Your lineup.",       "Find the sweet spot."),
+    ("02_detail_top.png",     "One tap at-bats.",   "Train for impact."),
+    ("03_expanded_stats.png", "Every number.",      "Built for power."),
+    ("04_game_log.png",       "Every game kept.",   "Track. Improve. Dominate."),
 ]
 
 
@@ -49,9 +53,7 @@ def load_font(path: str, size: int) -> ImageFont.FreeTypeFont:
         return ImageFont.truetype("/System/Library/Fonts/SFNS.ttf", size=size)
 
 
-def wrap_center(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont,
-                canvas_w: int, top: int, fill, line_gap: int = 0) -> int:
-    """Draw multi-line text centered horizontally. Returns bottom y."""
+def wrap_center(draw, text, font, canvas_w, top, fill, line_gap=0):
     y = top
     for line in text.split("\n"):
         bbox = draw.textbbox((0, 0), line, font=font)
@@ -62,65 +64,106 @@ def wrap_center(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFo
     return y
 
 
-def rounded_mask(size: tuple[int, int], radius: int) -> Image.Image:
+def rounded_mask(size, radius):
     m = Image.new("L", size, 0)
     ImageDraw.Draw(m).rounded_rectangle((0, 0, size[0], size[1]), radius=radius, fill=255)
     return m
+
+
+def draw_barrel_mark(draw: ImageDraw.ImageDraw, cx: int, cy: int, width: int, stroke: int = 5):
+    """Draw a small gold barrel outline centered at (cx, cy), spanning `width`."""
+    height = int(width * 0.22)
+    r = height / 2
+    left_cap_center_x = cx - width / 2 + r
+    point_x = cx + width / 2
+    point_y = cy
+
+    pts = []
+    steps = 32
+    for i in range(steps + 1):
+        t = math.pi * i / steps
+        angle = math.pi / 2 + t
+        x = left_cap_center_x + r * math.cos(angle)
+        y = cy - r * math.sin(angle)
+        pts.append((x, y))
+    pts.append((point_x, point_y))
+    draw.polygon(pts, outline=GOLD, fill=None, width=stroke)
+
+
+def draw_wordmark(draw: ImageDraw.ImageDraw, top: int):
+    """BARREL wordmark with the barrel mark to the right."""
+    font = load_font(WORDMARK_FONT, 72)
+    text = "BARREL"
+    bbox = draw.textbbox((0, 0), text, font=font, stroke_width=0)
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
+
+    mark_w = 140
+    gap = 30
+    total_w = text_w + gap + mark_w
+
+    x = (W - total_w) // 2
+    # Draw BARREL in white with wide letter spacing
+    letter_spacing = 8
+    cursor = x
+    for ch in text:
+        draw.text((cursor, top), ch, font=font, fill=(255, 255, 255, 255))
+        cb = draw.textbbox((0, 0), ch, font=font)
+        cursor += (cb[2] - cb[0]) + letter_spacing
+
+    mark_cx = cursor + gap + mark_w // 2 - letter_spacing
+    mark_cy = top + text_h // 2 + 6
+    draw_barrel_mark(draw, mark_cx, mark_cy, mark_w, stroke=5)
 
 
 def compose_frame(raw_path: Path, headline: str, subtitle: str) -> Image.Image:
     canvas = Image.new("RGBA", (W, H), BG)
     d = ImageDraw.Draw(canvas)
 
-    # Dark rounded inner card — subtle depth, edge padding 40px
+    # Wordmark at very top
+    draw_wordmark(d, top=80)
+
+    # Dark rounded inner card
     card_pad = 40
-    card_top = 120
+    card_top = 230
     card_bottom = H - 120
     d.rounded_rectangle(
         (card_pad, card_top, W - card_pad, card_bottom),
         radius=72, fill=CARD,
     )
 
-    # Headline — auto-fit longest line to card width (minus inset)
+    # Headline — auto-fit longest line to card width
     max_text_w = (W - 2 * card_pad) - 160
     head_size = 220
     while head_size > 90:
         head_font = load_font(HEAD_FONT, head_size)
-        widest = max(
-            d.textbbox((0, 0), line, font=head_font)[2] for line in headline.split("\n")
-        )
+        widest = max(d.textbbox((0, 0), line, font=head_font)[2] for line in headline.split("\n"))
         if widest <= max_text_w:
             break
         head_size -= 6
-    head_y = card_top + 140
+    head_y = card_top + 130
     head_bottom = wrap_center(d, headline, head_font, W, head_y, HEADLINE, line_gap=-10)
 
-    # Subtitle
-    sub_font = load_font(SUB_FONT, 76)
-    sub_y = head_bottom + 60
+    # Subtitle in gold
+    sub_font = load_font(SUB_FONT, 68)
+    sub_y = head_bottom + 50
     sub_bottom = wrap_center(d, subtitle, sub_font, W, sub_y, SUBTITLE, line_gap=14)
 
-    # Load and size the phone screenshot. Rendered as a phone-shaped rounded rect.
+    # Phone screenshot
     shot = Image.open(raw_path).convert("RGBA")
-    target_w = int(W * 0.78)                  # slightly inset from card
+    target_w = int(W * 0.78)
     target_h = int(target_w * shot.height / shot.width)
     shot = shot.resize((target_w, target_h), Image.LANCZOS)
-
-    # Round phone corners
     shot.putalpha(rounded_mask(shot.size, radius=88))
 
-    # Drop-shadow layer
+    # Drop shadow
     shadow = Image.new("RGBA", (target_w + 120, target_h + 120), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shadow)
-    sd.rounded_rectangle(
-        (60, 80, target_w + 60, target_h + 60),
-        radius=88, fill=SHADOW,
-    )
+    sd.rounded_rectangle((60, 80, target_w + 60, target_h + 60), radius=88, fill=SHADOW)
     shadow = shadow.filter(ImageFilter.GaussianBlur(radius=38))
 
-    # Position phone centered under subtitle, ensuring bottom fits card
-    available = card_bottom - sub_bottom - 120
-    phone_y = sub_bottom + 120 + max(0, (available - target_h) // 2)
+    available = card_bottom - sub_bottom - 100
+    phone_y = sub_bottom + 100 + max(0, (available - target_h) // 2)
     phone_x = (W - target_w) // 2
     canvas.alpha_composite(shadow, (phone_x - 60, phone_y - 40))
     canvas.alpha_composite(shot, (phone_x, phone_y))

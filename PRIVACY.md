@@ -1,8 +1,8 @@
-# Baseball Stat Tracker — Privacy Policy
+# BARREL — Privacy Policy
 
 _Last updated: 2026-04-20_
 
-Baseball Stat Tracker is built for coaches, parents, and players who want to track at-bat outcomes without handing over personal data. This policy explains exactly what we do (and don't do) with information that passes through the app.
+BARREL is built for coaches, parents, and players who want to track at-bat outcomes without handing over personal data. This policy explains exactly what we do (and don't do) with information that passes through the app.
 
 ## Data we collect
 

@@ -1,19 +1,27 @@
-# App Store Connect — iOS App 1.0 copy
+# App Store Connect — BARREL 1.0 copy
 
 Drop these straight into App Store Connect → Distribution → 1.0 Prepare for Submission.
 
 ---
 
-## Promotional Text — 170 char limit
-Coaches, parents, and players: log every at-bat in one tap. Live AVG, OBP, SLG, OPS. No account required. Built for the dugout, fast enough for the bench.
+## App Name
+BARREL
 
-<!-- 168 chars incl. spaces -->
+## Subtitle (optional, 30 char)
+Find the sweet spot.
+
+---
+
+## Promotional Text — 170 char limit
+Find the sweet spot. Log every at-bat in one tap — AVG, OBP, SLG, OPS live as you play. No account, no cloud, no noise. Built for the dugout.
+
+<!-- 148 chars incl. spaces -->
 
 ---
 
 ## Description — 4,000 char limit
 
-Baseball Stat Tracker is the fastest way to capture a real-game at-bat. Tap once — the stats update instantly.
+BARREL is the fastest way to capture a real-game at-bat. Tap once — the stats update instantly.
 
 Built for coaches, parents, and players who want real numbers without wrestling a spreadsheet between innings.
 
@@ -31,21 +39,19 @@ BUILT FOR THE DUGOUT
 No accounts. No ads. No subscription. Sign in with Apple if you want your session to follow you across reinstalls, or use a simple email fallback. Everything stays on your device.
 
 PRIVACY FIRST
-Baseball Stat Tracker does not collect your data. No analytics. No tracking. Your roster, at-bats, and game logs are stored locally on your iPhone.
+BARREL does not collect your data. No analytics. No tracking. Your roster, at-bats, and game logs are stored locally on your iPhone.
 
 MADE FOR YOUTH, TRAVEL, AND REC LEAGUES
 If you are coaching a 9–12 team, tracking your kid's season, or just want to see your own numbers tick up with every swing — this is the app.
 
-Download Baseball Stat Tracker and make every at-bat count.
-
-<!-- ~1800 chars -->
+Find the sweet spot. Train for impact. Track. Improve. Dominate.
 
 ---
 
 ## Keywords — 100 char limit (comma-separated, no spaces after commas)
-baseball,stats,tracker,at-bat,batting,average,coach,softball,youth,dugout,ops,slg,obp,scorebook
+barrel,baseball,stats,tracker,at-bat,batting,average,coach,softball,ops,slg,obp,scorebook
 
-<!-- 95 chars -->
+<!-- 89 chars -->
 
 ---
 

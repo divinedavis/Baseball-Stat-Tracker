@@ -25,6 +25,7 @@ enum AppearanceMode: String, CaseIterable, Identifiable {
 struct BaseballStatTrackerApp: App {
     @StateObject private var store = PlayerStore()
     @StateObject private var auth = AuthStore()
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("appearance") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
     private var appearance: AppearanceMode {
@@ -38,9 +39,13 @@ struct BaseballStatTrackerApp: App {
                 .environmentObject(auth)
                 .preferredColorScheme(appearance.colorScheme)
                 .onAppear {
+                    AppIconScheduler.applyIfNeeded()
                     #if DEBUG
                     DemoSeeder.seedIfRequested(store: store, auth: auth)
                     #endif
+                }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { AppIconScheduler.applyIfNeeded() }
                 }
         }
     }
