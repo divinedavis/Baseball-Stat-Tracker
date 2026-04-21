@@ -13,9 +13,10 @@ BARREL brand palette:
 """
 from __future__ import annotations
 
-import math
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+from barrel_geometry import build_barrel_polygon
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "docs" / "marketing" / "raw"
@@ -72,21 +73,7 @@ def rounded_mask(size, radius):
 
 def draw_barrel_mark(draw: ImageDraw.ImageDraw, cx: int, cy: int, width: int, stroke: int = 5):
     """Draw a small gold barrel outline centered at (cx, cy), spanning `width`."""
-    height = int(width * 0.22)
-    r = height / 2
-    left_cap_center_x = cx - width / 2 + r
-    point_x = cx + width / 2
-    point_y = cy
-
-    pts = []
-    steps = 32
-    for i in range(steps + 1):
-        t = math.pi * i / steps
-        angle = math.pi / 2 + t
-        x = left_cap_center_x + r * math.cos(angle)
-        y = cy - r * math.sin(angle)
-        pts.append((x, y))
-    pts.append((point_x, point_y))
+    pts = build_barrel_polygon(center_x=cx, center_y=cy, shape_w=width)
     draw.polygon(pts, outline=GOLD, fill=None, width=stroke)
 
 
