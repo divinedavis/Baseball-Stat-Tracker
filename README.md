@@ -1,5 +1,9 @@
 <div align="center">
 
+<img src="docs/banner.png" alt="BARREL" width="100%" />
+
+<img src="BaseballStatTracker/Assets.xcassets/AppIcon.appiconset/AppIcon.png" alt="BARREL app icon" width="180" />
+
 # BARREL
 
 **Find the sweet spot.** One-tap at-bat logger for coaches, parents, and
@@ -26,7 +30,7 @@ you're holding a coffee in one hand.
 ## Features
 
 - **One tap per at-bat** — 12 outcome buttons cover every line of the
-  scorebook (1B/2B/3B/HR, BB, K, GO/FO/LO, SB, BU, +RBI).
+  scorebook (1B/2B/3B/HR, BB, K, GO/LO, SB, ROE, BU, +RBI).
 - **Slash line in real time** — AVG, OBP, SLG, OPS update the moment you tap.
 - **Per-day game log** — every at-bat, timestamped, groupable by game day,
   with a rolling "recent form" meter so streaks and slumps are obvious.
@@ -39,72 +43,33 @@ you're holding a coffee in one hand.
   session across reinstalls.
 - **Sign in with Apple + local email fallback** — both supported, both
   private, both survive a reinstall via Keychain.
+- **Night icon** — alternate gold-on-gold app icon automatically swaps in
+  between 8 PM and 6 AM ET.
 
 ## Tech stack
 
-- **SwiftUI** — every screen, including the auth flow and the at-bat pad.
-- **iOS 17+** — `ContentUnavailableView`, `NavigationStack`, modern
-  `@Observable`-adjacent stores.
+- **Swift 5.9 + SwiftUI** — every screen, including the auth splash, the
+  at-bat pad, and the animated gold wave background.
+- **iOS 17+** — `ContentUnavailableView`, `NavigationStack`, `TimelineView`
+  for the liquid gradient animation, `@Observable`-adjacent stores.
 - **Sign in with Apple** via `AuthenticationServices`.
 - **Local persistence** — JSON documents in the app's Documents directory,
   debounced saves, ISO-8601 dates.
 - **iOS Keychain** — credentials + session survive reinstall on the same
   device; sign out is the only way to end a session.
-- **No external packages.** Pure Apple frameworks.
-- **xcodegen** + a shell pipeline to ship every `main` commit straight to
-  TestFlight (see [`INSTRUCTIONS.md`](INSTRUCTIONS.md)).
+- **Alternate app icons** — `UIApplication.setAlternateIconName` + a
+  time-of-day scheduler drive the night-icon swap.
+- **No external packages.** Pure Apple frameworks — zero SwiftPM / CocoaPods
+  dependencies.
+- **xcodegen** for the project spec, a shell ship pipeline for TestFlight
+  (see [`INSTRUCTIONS.md`](INSTRUCTIONS.md)).
 
-## Build
+## Install
 
-```bash
-brew install xcodegen            # one-time
-xcodegen generate
-open BaseballStatTracker.xcodeproj
-```
-
-Hit ⌘R. Deployment target is iOS 17. No Cocoapods, no SwiftPM packages,
-nothing to fetch. The Xcode target is still named `BaseballStatTracker`
-internally — only the user-visible brand (app name, icon, colors) is BARREL.
-
-### Demo mode
-
-The app ships with a DEBUG-only `-demoSeed` launch argument used to capture
-the marketing screenshots. It signs in a local demo user and pre-populates a
-three-player roster with a few days of at-bats:
-
-```bash
-xcrun simctl launch booted com.divinedavis.BaseballStatTracker \
-    -demoSeed              # seed roster + sign in
-xcrun simctl launch booted com.divinedavis.BaseballStatTracker \
-    -demoSeed -demoOpenDetail   # also push into the first player's detail
-```
-
-The flag is compiled out of Release builds (`#if DEBUG`), so nothing ships
-to TestFlight or the App Store.
-
-## Ship to TestFlight
-
-Every push to `main` ships a new TestFlight build:
-
-```bash
-./scripts/ship-to-testflight.sh --auto-notes
-```
-
-The script bumps `CURRENT_PROJECT_VERSION`, regenerates the Xcode project,
-archives + exports + uploads the `.ipa`, polls App Store Connect until the
-build reaches `VALID`, sets the release notes from recent commit messages,
-and records the shipped commit so re-runs no-op on an unchanged tree.
-
-See [`INSTRUCTIONS.md`](INSTRUCTIONS.md) for credential setup.
-
-## Brand
-
-- Primary color: **gold** `#D4AF37`
-- Ink: **white** `#FFFFFF`
-- Canvas: **near-black** `#0A0A0C`
-- Tagline: _Find the sweet spot._
-- Mark: a semicircle-capped wedge tapering to a sharp point — literally the
-  sweet spot of a baseball bat, also reads as a megaphone.
+BARREL is currently in **TestFlight**. The App Store submission is in
+review; once it's approved the listing will go live. In the meantime the
+repo is primarily for the authors — public for transparency, not for
+community builds.
 
 ## License
 

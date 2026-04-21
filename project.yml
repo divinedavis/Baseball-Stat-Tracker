@@ -44,6 +44,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.divinedavis.BaseballStatTracker
         CODE_SIGN_ENTITLEMENTS: BaseballStatTracker/BaseballStatTracker.entitlements
-        CURRENT_PROJECT_VERSION: "33"
+        CURRENT_PROJECT_VERSION: "34"
         MARKETING_VERSION: "1.0"
         TARGETED_DEVICE_FAMILY: "1"
