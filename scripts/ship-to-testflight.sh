@@ -124,24 +124,44 @@ MARKETING=$(awk -F'"' '/MARKETING_VERSION:/ {print $2; exit}' project.yml)
 info "regenerating Xcode project"
 xcodegen generate >/dev/null
 
+# Strip extended attributes (com.apple.FinderInfo etc.) from sources and project.
+# macOS Finder can silently attach these, which makes codesign refuse the bundle
+# with "resource fork, Finder information, or similar detritus not allowed".
+info "stripping extended attributes from sources"
+xattr -rc "$PROJECT_ROOT/BaseballStatTracker" 2>/dev/null || true
+xattr -rc "$PROJECT_ROOT/$PROJECT" 2>/dev/null || true
+xattr -c  "$PROJECT_ROOT/project.yml" 2>/dev/null || true
+
 # ---------- archive ----------
 ARCHIVE=/tmp/${SCHEME}-ship.xcarchive
 EXPORT_DIR=/tmp/${SCHEME}-ship-export
 rm -rf "$ARCHIVE" "$EXPORT_DIR"
 
+archive_once() {
+    xcodebuild \
+        -project "$PROJECT" \
+        -scheme "$SCHEME" \
+        -configuration Release \
+        -destination "generic/platform=iOS" \
+        -archivePath "$ARCHIVE" \
+        -allowProvisioningUpdates \
+        -authenticationKeyPath "$ASC_KEY_PATH" \
+        -authenticationKeyID "$ASC_KEY_ID" \
+        -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+        archive >/tmp/ship-archive.log 2>&1
+}
+
 info "archiving ${MARKETING} (${NEXT_BUILD})"
-xcodebuild \
-    -project "$PROJECT" \
-    -scheme "$SCHEME" \
-    -configuration Release \
-    -destination "generic/platform=iOS" \
-    -archivePath "$ARCHIVE" \
-    -allowProvisioningUpdates \
-    -authenticationKeyPath "$ASC_KEY_PATH" \
-    -authenticationKeyID "$ASC_KEY_ID" \
-    -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-    archive >/tmp/ship-archive.log 2>&1 \
-    || { tail -40 /tmp/ship-archive.log; die "archive failed — see /tmp/ship-archive.log"; }
+if ! archive_once; then
+    if grep -q "resource fork, Finder information" /tmp/ship-archive.log 2>/dev/null; then
+        info "codesign hit xattr detritus — stripping archive + retrying"
+        [[ -d "$ARCHIVE" ]] && xattr -rc "$ARCHIVE" 2>/dev/null || true
+        rm -rf "$ARCHIVE"
+        archive_once || { tail -40 /tmp/ship-archive.log; die "archive failed even after xattr cleanup — see /tmp/ship-archive.log"; }
+    else
+        tail -40 /tmp/ship-archive.log; die "archive failed — see /tmp/ship-archive.log"
+    fi
+fi
 
 # ---------- export ----------
 EXPORT_OPTS=/tmp/ship-ExportOptions.plist

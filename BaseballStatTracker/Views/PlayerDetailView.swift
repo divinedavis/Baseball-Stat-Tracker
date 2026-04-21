@@ -25,10 +25,12 @@ struct PlayerDetailView: View {
     }
 
     var body: some View {
+        ScrollViewReader { proxy in
         List {
             Section("Slash line") {
                 StatGrid(stats: stats)
             }
+            .id("slash")
             Section {
                 if showCountingStats {
                     CountingStatsGrid(stats: stats)
@@ -66,7 +68,22 @@ struct PlayerDetailView: View {
                         )
                     }
                 }
+                .id("gamelog")
             }
+        }
+        #if DEBUG
+        .task {
+            if CommandLine.arguments.contains("-demoExpandStats") {
+                showCountingStats = true
+            }
+            if CommandLine.arguments.contains("-demoScrollGameLog") {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                withAnimation(.none) {
+                    proxy.scrollTo("gamelog", anchor: .top)
+                }
+            }
+        }
+        #endif
         }
         .navigationTitle(current.name)
         .navigationBarTitleDisplayMode(.inline)
