@@ -34,17 +34,23 @@ struct AuthView: View {
     }
 
     private var background: some View {
-        LinearGradient(
-            stops: [
-                .init(color: .white, location: 0.0),
-                .init(color: .white, location: 0.38),
-                .init(color: Color(red: 0.97, green: 0.93, blue: 0.82), location: 0.55),
-                .init(color: Color(red: 212/255, green: 175/255, blue: 55/255), location: 0.82),
-                .init(color: Color(red: 146/255, green: 118/255, blue: 32/255), location: 1.0)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        ZStack {
+            WaveBackground()
+            // Subtle scrim along the bottom half so the lower card's
+            // white body copy stays legible even when a bright gold
+            // highlight drifts under it.
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.0),
+                    .init(color: .clear, location: 0.42),
+                    .init(color: Color.black.opacity(0.35), location: 0.72),
+                    .init(color: Color.black.opacity(0.55), location: 1.0),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .allowsHitTesting(false)
+        }
     }
 
     private var heroStack: some View {
@@ -65,7 +71,7 @@ struct AuthView: View {
             }
             Text(heroWords[i])
                 .font(.system(size: fontSize, weight: bold ? .bold : .regular))
-                .foregroundStyle(.black)
+                .foregroundStyle(.white)
                 .opacity(opacity)
         }
     }
@@ -111,7 +117,7 @@ struct AuthView: View {
                     auth.handleAppleAuthorization(result)
                 }
             )
-            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+            .signInWithAppleButtonStyle(.white)
             .frame(height: 54)
             .clipShape(Capsule())
 
