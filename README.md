@@ -48,21 +48,25 @@ you're holding a coffee in one hand.
 
 ## Tech stack
 
-- **Swift 5.9 + SwiftUI** — every screen, including the auth splash, the
-  at-bat pad, and the animated gold wave background.
-- **iOS 17+** — `ContentUnavailableView`, `NavigationStack`, `TimelineView`
-  for the liquid gradient animation, `@Observable`-adjacent stores.
-- **Sign in with Apple** via `AuthenticationServices`.
-- **Local persistence** — JSON documents in the app's Documents directory,
-  debounced saves, ISO-8601 dates.
-- **iOS Keychain** — credentials + session survive reinstall on the same
-  device; sign out is the only way to end a session.
-- **Alternate app icons** — `UIApplication.setAlternateIconName` + a
-  time-of-day scheduler drive the night-icon swap.
-- **No external packages.** Pure Apple frameworks — zero SwiftPM / CocoaPods
-  dependencies.
-- **xcodegen** for the project spec, a shell ship pipeline for TestFlight
-  (see [`INSTRUCTIONS.md`](INSTRUCTIONS.md)).
+![platform](https://img.shields.io/badge/platform-iOS%2017%2B-black)
+![swift](https://img.shields.io/badge/swift-5.9-D4AF37)
+![ui](https://img.shields.io/badge/ui-SwiftUI-black)
+![language](https://img.shields.io/badge/language-Swift-black)
+![auth](https://img.shields.io/badge/auth-Sign%20in%20with%20Apple-black)
+![framework](https://img.shields.io/badge/framework-AuthenticationServices-black)
+![secure store](https://img.shields.io/badge/secure%20store-iOS%20Keychain-black)
+![persistence](https://img.shields.io/badge/persistence-JSON%20on%20device-black)
+![dates](https://img.shields.io/badge/dates-ISO--8601-black)
+![animation](https://img.shields.io/badge/animation-TimelineView-black)
+![navigation](https://img.shields.io/badge/navigation-NavigationStack-black)
+![empty state](https://img.shields.io/badge/iOS%2017-ContentUnavailableView-black)
+![icons](https://img.shields.io/badge/icons-Alternate%20App%20Icons-black)
+![icon API](https://img.shields.io/badge/API-setAlternateIconName-black)
+![offline](https://img.shields.io/badge/mode-offline--first-black)
+![deps](https://img.shields.io/badge/deps-zero-D4AF37)
+![project](https://img.shields.io/badge/project-xcodegen-black)
+![ship](https://img.shields.io/badge/ship-TestFlight-D4AF37)
+![license](https://img.shields.io/badge/license-MIT-D4AF37)
 
 ## Install
 
