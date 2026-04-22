@@ -12,7 +12,6 @@ struct PlayerDetailView: View {
         store.players.first(where: { $0.id == player.id }) ?? player
     }
 
-    private var stats: PlayerStats { store.stats(for: current.id) }
     private var games: [DayGameKey] { store.playerGames(for: current.id) }
     private var todaySessions: [GameSession] { store.sessions(for: current.id, on: .now) }
     private var activeGameNumber: Int {
@@ -21,13 +20,11 @@ struct PlayerDetailView: View {
     private var canAddAnotherGame: Bool {
         activeGameNumber < PlayerStore.maxGamesPerDay
     }
-    private var recentEntries: [AtBatEntry] {
-        Array(
-            store.entries(for: current.id)
-                .lazy
-                .filter { $0.outcome.countsAsAtBat }
-                .prefix(5)
-        )
+    /// Top-of-screen stats reflect the game in progress, not the player's
+    /// lifetime totals — so "Add another game" naturally resets the display
+    /// to zeros for the new game.
+    private var stats: PlayerStats {
+        store.stats(for: current.id, on: .now, gameNumber: activeGameNumber)
     }
 
     var body: some View {
@@ -58,12 +55,6 @@ struct PlayerDetailView: View {
                     gameNumber: activeGameNumber,
                     history: history
                 )
-            }
-            if !recentEntries.isEmpty {
-                let recentStats = PlayerStats(entries: recentEntries)
-                Section("Recent form") {
-                    RecentFormMeter(stats: recentStats)
-                }
             }
             if !games.isEmpty {
                 Section("Game log") {
@@ -278,64 +269,6 @@ struct MinimizedStats: View {
             Spacer()
         }
         .padding(.vertical, 2)
-    }
-}
-
-struct RecentFormMeter: View {
-    let stats: PlayerStats
-
-    private var avg: Double { stats.battingAverage }
-    private var hasAtBats: Bool { stats.atBats > 0 }
-    private var isHot: Bool { hasAtBats && avg >= 0.300 }
-
-    /// Bar scales 0 → .500 so the .300 threshold sits meaningfully in the middle.
-    private let scaleMax: Double = 0.500
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(hasAtBats ? StatFormatter.avg(avg) : "—")
-                    .font(.system(.headline, design: .rounded).monospacedDigit())
-                    .foregroundStyle(hasAtBats ? (isHot ? Color.green : Color.orange) : .secondary)
-                Text(hasAtBats ? "recent AVG" : "no at-bats")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(width: 72, alignment: .leading)
-
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(Color(.tertiarySystemFill))
-
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(isHot ? Color.green : Color.orange)
-                        .frame(width: proxy.size.width * min(1.0, avg / scaleMax))
-                        .opacity(hasAtBats ? 1 : 0)
-                        .animation(.easeInOut(duration: 0.25), value: avg)
-
-                    // .300 threshold tick
-                    Rectangle()
-                        .fill(Color.primary.opacity(0.35))
-                        .frame(width: 1)
-                        .offset(x: proxy.size.width * (0.300 / scaleMax))
-                }
-            }
-            .frame(height: 10)
-
-            if hasAtBats {
-                Image(systemName: isHot ? "flame.fill" : "thermometer.low")
-                    .font(.subheadline)
-                    .foregroundStyle(isHot ? .green : .orange)
-            }
-        }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            hasAtBats
-                ? "Recent batting average \(StatFormatter.avg(avg)), \(isHot ? "above" : "below") .300"
-                : "No at-bats yet"
-        )
     }
 }
 

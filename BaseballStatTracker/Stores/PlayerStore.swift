@@ -209,14 +209,20 @@ final class PlayerStore: ObservableObject {
         })
     }
 
-    /// One entry per (day, game) combination that has at least one at-bat,
-    /// sorted most-recent day first, then game number ascending within a day.
+    /// One entry per (day, game) combination the player has started or recorded
+    /// at-bats for. Sorted most-recent day first, then game number ascending.
+    /// Sessions are included so a row appears immediately when "Add another game"
+    /// is tapped, even before any at-bats land in it.
     func playerGames(for playerID: Player.ID) -> [DayGameKey] {
         let cal = Calendar.current
-        let keys = atBats
-            .filter { $0.playerID == playerID }
-            .map { DayGameKey(day: cal.startOfDay(for: $0.date), gameNumber: $0.gameNumber) }
-        return Array(Set(keys)).sorted { a, b in
+        var keys = Set<DayGameKey>()
+        for ab in atBats where ab.playerID == playerID {
+            keys.insert(DayGameKey(day: cal.startOfDay(for: ab.date), gameNumber: ab.gameNumber))
+        }
+        for s in gameSessions where s.playerID == playerID {
+            keys.insert(DayGameKey(day: cal.startOfDay(for: s.startTime), gameNumber: s.gameNumber))
+        }
+        return Array(keys).sorted { a, b in
             if a.day != b.day { return a.day > b.day }
             return a.gameNumber < b.gameNumber
         }
