@@ -6,7 +6,6 @@ struct PlayerDetailView: View {
 
     let player: Player
 
-    @State private var entryDate: Date = .now
     @AppStorage("playerDetail.showCountingStats") private var showCountingStats: Bool = false
 
     private var current: Player {
@@ -15,6 +14,13 @@ struct PlayerDetailView: View {
 
     private var stats: PlayerStats { store.stats(for: current.id) }
     private var activeDays: [Date] { store.activeDays(for: current.id) }
+    private var todaySessions: [GameSession] { store.sessions(for: current.id, on: .now) }
+    private var activeGameNumber: Int {
+        todaySessions.map { $0.gameNumber }.max() ?? 1
+    }
+    private var canAddAnotherGame: Bool {
+        activeGameNumber < PlayerStore.maxGamesPerDay
+    }
     private var recentEntries: [AtBatEntry] {
         Array(
             store.entries(for: current.id)
@@ -47,10 +53,16 @@ struct PlayerDetailView: View {
                 CollapsibleHeader(title: "Counting stats", isExpanded: $showCountingStats)
             }
             Section("Record an at-bat") {
-                AtBatPad(playerID: current.id, date: entryDate, history: history)
+                AtBatPad(
+                    playerID: current.id,
+                    gameNumber: activeGameNumber,
+                    history: history
+                )
             }
             Section {
-                DatePicker("Date", selection: $entryDate, displayedComponents: [.date, .hourAndMinute])
+                ForEach(todaySessions) { session in
+                    GameTimeRow(session: session)
+                }
             }
             if !recentEntries.isEmpty {
                 let recentStats = PlayerStats(entries: recentEntries)
@@ -107,6 +119,13 @@ struct PlayerDetailView: View {
                 .disabled(!history.canRedo)
 
                 Menu {
+                    Button {
+                        addAnotherGame()
+                    } label: {
+                        Label("Add another game", systemImage: "plus.circle")
+                    }
+                    .disabled(!canAddAnotherGame)
+
                     Button(role: .destructive) {
                         resetAll()
                     } label: {
@@ -117,21 +136,45 @@ struct PlayerDetailView: View {
                 }
             }
         }
+        .onAppear {
+            store.ensureG1Session(for: current.id, on: .now)
+        }
+    }
+
+    private func addAnotherGame() {
+        guard let started = store.startNextGame(for: current.id, on: .now) else { return }
+        history.register(
+            undo: { [weak store] in
+                store?.gameSessions.removeAll { $0.id == started.id }
+            },
+            redo: { [weak store] in
+                guard let store, !store.gameSessions.contains(where: { $0.id == started.id }) else { return }
+                store.gameSessions.append(started)
+            }
+        )
     }
 
     private func resetAll() {
-        let removed = store.entries(for: current.id)
-        guard !removed.isEmpty else { return }
-        for entry in removed {
+        let removedEntries = store.entries(for: current.id)
+        let removedSessions = store.gameSessions.filter { $0.playerID == current.id }
+        guard !(removedEntries.isEmpty && removedSessions.isEmpty) else { return }
+        for entry in removedEntries {
             store.deleteAtBat(id: entry.id)
         }
+        store.gameSessions.removeAll { $0.playerID == current.id }
+        let pid = current.id
         history.register(
-            undo: { [weak store] in store?.restore(removed) },
+            undo: { [weak store] in
+                guard let store else { return }
+                store.restore(removedEntries)
+                store.gameSessions.append(contentsOf: removedSessions)
+            },
             redo: { [weak store] in
                 guard let store else { return }
-                for entry in removed {
+                for entry in removedEntries {
                     store.deleteAtBat(id: entry.id)
                 }
+                store.gameSessions.removeAll { $0.playerID == pid }
             }
         )
     }
@@ -347,7 +390,7 @@ struct StatCell: View {
 struct AtBatPad: View {
     @EnvironmentObject private var store: PlayerStore
     let playerID: Player.ID
-    let date: Date
+    let gameNumber: Int
     @ObservedObject var history: UndoHistory
 
     @State private var contact: ContactQuality? = nil
@@ -407,13 +450,30 @@ struct AtBatPad: View {
             for: playerID,
             outcome: outcome,
             contact: contact,
-            at: date
+            at: .now,
+            gameNumber: gameNumber
         )
         history.register(
             undo: { [weak store] in store?.deleteAtBat(id: entry.id) },
             redo: { [weak store] in store?.restore(entry) }
         )
         contact = nil
+    }
+}
+
+struct GameTimeRow: View {
+    @EnvironmentObject private var store: PlayerStore
+    let session: GameSession
+
+    var body: some View {
+        DatePicker(
+            "G\(session.gameNumber) Time",
+            selection: Binding(
+                get: { session.startTime },
+                set: { store.updateGameSessionStart(id: session.id, to: $0) }
+            ),
+            displayedComponents: [.hourAndMinute]
+        )
     }
 }
 

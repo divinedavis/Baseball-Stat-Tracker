@@ -1,15 +1,35 @@
 import Foundation
 import Combine
 
+/// Start marker for a game on a given day. Up to 3 per player per day.
+/// `startTime` is when the user opened the tracker for that game.
+struct GameSession: Identifiable, Codable, Hashable {
+    let id: UUID
+    let playerID: UUID
+    var startTime: Date
+    var gameNumber: Int
+
+    init(id: UUID = UUID(), playerID: UUID, startTime: Date = .now, gameNumber: Int) {
+        self.id = id
+        self.playerID = playerID
+        self.startTime = startTime
+        self.gameNumber = gameNumber
+    }
+}
+
 @MainActor
 final class PlayerStore: ObservableObject {
+    static let maxGamesPerDay = 3
+
     @Published var players: [Player] = []
     @Published var atBats: [AtBatEntry] = []
     @Published var teams: [String] = []
+    @Published var gameSessions: [GameSession] = []
 
     private let playersURL: URL
     private let atBatsURL: URL
     private let teamsURL: URL
+    private let gameSessionsURL: URL
     private var saveTask: Task<Void, Never>?
 
     init(filenamePrefix: String = "bst") {
@@ -17,6 +37,7 @@ final class PlayerStore: ObservableObject {
         self.playersURL = dir.appendingPathComponent("\(filenamePrefix)-players.json")
         self.atBatsURL = dir.appendingPathComponent("\(filenamePrefix)-atbats.json")
         self.teamsURL = dir.appendingPathComponent("\(filenamePrefix)-teams.json")
+        self.gameSessionsURL = dir.appendingPathComponent("\(filenamePrefix)-gamesessions.json")
         load()
     }
 
@@ -50,6 +71,7 @@ final class PlayerStore: ObservableObject {
         let removed = offsets.map { players[$0].id }
         players.remove(atOffsets: offsets)
         atBats.removeAll { removed.contains($0.playerID) }
+        gameSessions.removeAll { removed.contains($0.playerID) }
         scheduleSave()
     }
 
@@ -60,13 +82,15 @@ final class PlayerStore: ObservableObject {
         for playerID: Player.ID,
         outcome: AtBatOutcome,
         contact: ContactQuality? = nil,
-        at date: Date = .now
+        at date: Date = .now,
+        gameNumber: Int = 1
     ) -> AtBatEntry {
         let entry = AtBatEntry(
             playerID: playerID,
             date: date,
             outcome: outcome,
-            contact: contact
+            contact: contact,
+            gameNumber: gameNumber
         )
         atBats.append(entry)
         scheduleSave()
@@ -91,7 +115,7 @@ final class PlayerStore: ObservableObject {
         scheduleSave()
     }
 
-    /// Wipes every roster, at-bat, and team entry — in memory and on disk.
+    /// Wipes every roster, at-bat, team, and game-session entry — in memory and on disk.
     /// Used by the Delete Account flow; pairs with `AuthStore.deleteAccount()`.
     func deleteAllData() {
         saveTask?.cancel()
@@ -99,9 +123,67 @@ final class PlayerStore: ObservableObject {
         players.removeAll()
         atBats.removeAll()
         teams.removeAll()
-        for url in [playersURL, atBatsURL, teamsURL] {
+        gameSessions.removeAll()
+        for url in [playersURL, atBatsURL, teamsURL, gameSessionsURL] {
             try? FileManager.default.removeItem(at: url)
         }
+    }
+
+    // MARK: - Game sessions
+
+    /// Sessions for a player on a given calendar day, sorted by gameNumber.
+    func sessions(for playerID: Player.ID, on day: Date) -> [GameSession] {
+        let cal = Calendar.current
+        return gameSessions
+            .filter { $0.playerID == playerID && cal.isDate($0.startTime, inSameDayAs: day) }
+            .sorted { $0.gameNumber < $1.gameNumber }
+    }
+
+    /// Ensures a G1 session exists for `playerID` on `day`; returns all sessions.
+    /// If at-bats already exist for that day, G1's start defaults to the earliest
+    /// at-bat time so pre-existing data lines up with its implicit first game.
+    @discardableResult
+    func ensureG1Session(for playerID: Player.ID, on day: Date) -> [GameSession] {
+        let existing = sessions(for: playerID, on: day)
+        if !existing.isEmpty { return existing }
+        let cal = Calendar.current
+        let sameDayAtBats = atBats
+            .filter { $0.playerID == playerID && cal.isDate($0.date, inSameDayAs: day) }
+            .map { $0.date }
+            .sorted()
+        let start = sameDayAtBats.first ?? Date.now
+        let session = GameSession(playerID: playerID, startTime: start, gameNumber: 1)
+        gameSessions.append(session)
+        scheduleSave()
+        return [session]
+    }
+
+    /// Starts the next game of the day (G2 or G3). Returns nil if already at the
+    /// per-day cap.
+    @discardableResult
+    func startNextGame(for playerID: Player.ID, on day: Date) -> GameSession? {
+        let existing = sessions(for: playerID, on: day)
+        let next = (existing.map { $0.gameNumber }.max() ?? 0) + 1
+        guard next <= Self.maxGamesPerDay else { return nil }
+        let session = GameSession(playerID: playerID, startTime: .now, gameNumber: next)
+        gameSessions.append(session)
+        scheduleSave()
+        return session
+    }
+
+    func updateGameSessionStart(id: GameSession.ID, to newStart: Date) {
+        guard let idx = gameSessions.firstIndex(where: { $0.id == id }) else { return }
+        gameSessions[idx].startTime = newStart
+        scheduleSave()
+    }
+
+    /// Deletes all sessions + at-bats for a player on a given day. Used by reset.
+    func clearDay(for playerID: Player.ID, on day: Date) {
+        let cal = Calendar.current
+        gameSessions.removeAll {
+            $0.playerID == playerID && cal.isDate($0.startTime, inSameDayAs: day)
+        }
+        scheduleSave()
     }
 
     func entries(for playerID: Player.ID) -> [AtBatEntry] {
@@ -153,6 +235,10 @@ final class PlayerStore: ObservableObject {
            let decoded = try? decoder.decode([String].self, from: data) {
             teams = decoded
         }
+        if let data = try? Data(contentsOf: gameSessionsURL),
+           let decoded = try? decoder.decode([GameSession].self, from: data) {
+            gameSessions = decoded
+        }
         // Back-fill teams from any existing players that pre-date the teams store.
         for player in players {
             if let t = player.team, !t.isEmpty {
@@ -179,6 +265,9 @@ final class PlayerStore: ObservableObject {
         }
         if let data = try? encoder.encode(teams) {
             try? data.write(to: teamsURL, options: [.atomic])
+        }
+        if let data = try? encoder.encode(gameSessions) {
+            try? data.write(to: gameSessionsURL, options: [.atomic])
         }
     }
 
