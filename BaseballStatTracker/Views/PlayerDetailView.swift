@@ -521,13 +521,8 @@ struct GameLogRow: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text("G\(key.gameNumber)")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.tint)
-                        Text(key.day, format: .dateTime.weekday(.wide).month().day())
-                            .font(.subheadline.weight(.semibold))
-                    }
+                    Text("G\(key.gameNumber): \(key.day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))")
+                        .font(.subheadline.weight(.semibold))
                     Text("\(entries.count) AB • \(StatFormatter.avg(gameStats.battingAverage)) AVG")
                         .font(.caption)
                         .foregroundStyle(.secondary)
