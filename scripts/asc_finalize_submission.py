@@ -41,7 +41,20 @@ REVIEW_NOTES = (
     "works; there is no backend server validating credentials.\n\n"
     "All data (roster, at-bats, game logs) is stored locally on the device. "
     "There is no backend, no analytics, no tracking. The app does not "
-    "collect any user data and works fully offline."
+    "collect any user data and works fully offline.\n\n"
+    "ACCOUNT DELETION (addressing 5.1.1(v) — prior rejection submission "
+    "ID a2646958):\n\n"
+    "To delete an account:\n"
+    "  1. Tap the profile icon (top-left on the Player roster screen)\n"
+    "  2. Tap \"Delete Account\" (red, below Sign Out)\n"
+    "  3. Tap \"Delete\" in the confirmation alert\n\n"
+    "Deletion removes all on-device credentials and every roster, at-bat, "
+    "and game-log record. The app has no backend, so there is no "
+    "server-side token to revoke; for Sign in with Apple accounts the "
+    "on-device Apple user identifier is removed.\n\n"
+    "Screen recording (physical device, full flow — account creation → "
+    "profile menu → Delete Account → confirmation → signed out):\n"
+    "https://drive.google.com/file/d/1ItM9oBF9ox3OMgkdKnQaiqs9Zx_ShGAF/view?usp=share_link"
 )
 
 
