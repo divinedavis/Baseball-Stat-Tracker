@@ -13,7 +13,7 @@ struct PlayerDetailView: View {
     }
 
     private var stats: PlayerStats { store.stats(for: current.id) }
-    private var activeDays: [Date] { store.activeDays(for: current.id) }
+    private var games: [DayGameKey] { store.playerGames(for: current.id) }
     private var todaySessions: [GameSession] { store.sessions(for: current.id, on: .now) }
     private var activeGameNumber: Int {
         todaySessions.map { $0.gameNumber }.max() ?? 1
@@ -59,23 +59,18 @@ struct PlayerDetailView: View {
                     history: history
                 )
             }
-            Section {
-                ForEach(todaySessions) { session in
-                    GameTimeRow(session: session)
-                }
-            }
             if !recentEntries.isEmpty {
                 let recentStats = PlayerStats(entries: recentEntries)
                 Section("Recent form") {
                     RecentFormMeter(stats: recentStats)
                 }
             }
-            if !activeDays.isEmpty {
+            if !games.isEmpty {
                 Section("Game log") {
-                    ForEach(activeDays, id: \.self) { day in
-                        DayLogRow(
+                    ForEach(games) { key in
+                        GameLogRow(
                             playerID: current.id,
-                            day: day,
+                            key: key,
                             history: history
                         )
                     }
@@ -461,22 +456,6 @@ struct AtBatPad: View {
     }
 }
 
-struct GameTimeRow: View {
-    @EnvironmentObject private var store: PlayerStore
-    let session: GameSession
-
-    var body: some View {
-        DatePicker(
-            "G\(session.gameNumber) Time",
-            selection: Binding(
-                get: { session.startTime },
-                set: { store.updateGameSessionStart(id: session.id, to: $0) }
-            ),
-            displayedComponents: [.hourAndMinute]
-        )
-    }
-}
-
 struct ContactToggle: View {
     let title: String
     let isOn: Bool
@@ -503,14 +482,18 @@ struct ContactToggle: View {
 
 // MARK: - Game log row
 
-struct DayLogRow: View {
+struct GameLogRow: View {
     @EnvironmentObject private var store: PlayerStore
     let playerID: Player.ID
-    let day: Date
+    let key: DayGameKey
     @ObservedObject var history: UndoHistory
 
-    private var entries: [AtBatEntry] { store.entries(for: playerID, on: day) }
-    private var dayStats: PlayerStats { store.stats(for: playerID, on: day) }
+    private var entries: [AtBatEntry] {
+        store.entries(for: playerID, on: key.day, gameNumber: key.gameNumber)
+    }
+    private var gameStats: PlayerStats {
+        store.stats(for: playerID, on: key.day, gameNumber: key.gameNumber)
+    }
 
     var body: some View {
         DisclosureGroup {
@@ -538,9 +521,14 @@ struct DayLogRow: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(day, format: .dateTime.weekday(.wide).month().day())
-                        .font(.subheadline.weight(.semibold))
-                    Text("\(entries.count) AB • \(StatFormatter.avg(dayStats.battingAverage)) AVG")
+                    HStack(spacing: 6) {
+                        Text("G\(key.gameNumber)")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.tint)
+                        Text(key.day, format: .dateTime.weekday(.wide).month().day())
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    Text("\(entries.count) AB • \(StatFormatter.avg(gameStats.battingAverage)) AVG")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

@@ -17,6 +17,14 @@ struct GameSession: Identifiable, Codable, Hashable {
     }
 }
 
+/// Key identifying one recorded game: the calendar day plus the game number
+/// within that day.
+struct DayGameKey: Hashable, Identifiable {
+    let day: Date
+    let gameNumber: Int
+    var id: String { "\(day.timeIntervalSince1970)-\(gameNumber)" }
+}
+
 @MainActor
 final class PlayerStore: ObservableObject {
     static let maxGamesPerDay = 3
@@ -171,31 +179,20 @@ final class PlayerStore: ObservableObject {
         return session
     }
 
-    func updateGameSessionStart(id: GameSession.ID, to newStart: Date) {
-        guard let idx = gameSessions.firstIndex(where: { $0.id == id }) else { return }
-        gameSessions[idx].startTime = newStart
-        scheduleSave()
-    }
-
-    /// Deletes all sessions + at-bats for a player on a given day. Used by reset.
-    func clearDay(for playerID: Player.ID, on day: Date) {
-        let cal = Calendar.current
-        gameSessions.removeAll {
-            $0.playerID == playerID && cal.isDate($0.startTime, inSameDayAs: day)
-        }
-        scheduleSave()
-    }
-
     func entries(for playerID: Player.ID) -> [AtBatEntry] {
         atBats
             .filter { $0.playerID == playerID }
             .sorted { $0.date > $1.date }
     }
 
-    func entries(for playerID: Player.ID, on day: Date) -> [AtBatEntry] {
+    func entries(for playerID: Player.ID, on day: Date, gameNumber: Int) -> [AtBatEntry] {
         let cal = Calendar.current
         return atBats
-            .filter { $0.playerID == playerID && cal.isDate($0.date, inSameDayAs: day) }
+            .filter {
+                $0.playerID == playerID
+                    && $0.gameNumber == gameNumber
+                    && cal.isDate($0.date, inSameDayAs: day)
+            }
             .sorted { $0.date > $1.date }
     }
 
@@ -203,20 +200,26 @@ final class PlayerStore: ObservableObject {
         PlayerStats(entries: atBats.lazy.filter { $0.playerID == playerID })
     }
 
-    func stats(for playerID: Player.ID, on day: Date) -> PlayerStats {
+    func stats(for playerID: Player.ID, on day: Date, gameNumber: Int) -> PlayerStats {
         let cal = Calendar.current
         return PlayerStats(entries: atBats.lazy.filter {
-            $0.playerID == playerID && cal.isDate($0.date, inSameDayAs: day)
+            $0.playerID == playerID
+                && $0.gameNumber == gameNumber
+                && cal.isDate($0.date, inSameDayAs: day)
         })
     }
 
-    /// Days on which this player has at least one entry, sorted most-recent first.
-    func activeDays(for playerID: Player.ID) -> [Date] {
+    /// One entry per (day, game) combination that has at least one at-bat,
+    /// sorted most-recent day first, then game number ascending within a day.
+    func playerGames(for playerID: Player.ID) -> [DayGameKey] {
         let cal = Calendar.current
-        let starts = atBats
+        let keys = atBats
             .filter { $0.playerID == playerID }
-            .map { cal.startOfDay(for: $0.date) }
-        return Array(Set(starts)).sorted(by: >)
+            .map { DayGameKey(day: cal.startOfDay(for: $0.date), gameNumber: $0.gameNumber) }
+        return Array(Set(keys)).sorted { a, b in
+            if a.day != b.day { return a.day > b.day }
+            return a.gameNumber < b.gameNumber
+        }
     }
 
     // MARK: - Persistence
