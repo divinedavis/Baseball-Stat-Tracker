@@ -163,6 +163,36 @@ final class AuthStore: ObservableObject {
         KeychainStore.delete(account: sessionAccount)
     }
 
+    /// Permanently deletes the signed-in account's credentials from the
+    /// Keychain, then signs out. Apple 5.1.1(v) requires an in-app account
+    /// deletion path for any app that supports account creation.
+    ///
+    /// Caller should also wipe the user's on-device content (roster, at-bats)
+    /// via `PlayerStore.deleteAllData()` — this method only owns the
+    /// account/credential side of the delete.
+    func deleteAccount() {
+        guard let user = currentUser else { return }
+        switch user.method {
+        case .email:
+            var creds = storedCredentials()
+            creds.removeValue(forKey: user.identifier)
+            if creds.isEmpty {
+                KeychainStore.delete(account: credentialsAccount)
+            } else {
+                saveCredentials(creds)
+            }
+        case .apple:
+            var profiles = appleProfiles()
+            profiles.removeValue(forKey: user.identifier)
+            if profiles.isEmpty {
+                KeychainStore.delete(account: "session.apple")
+            } else if let data = try? JSONEncoder().encode(profiles) {
+                try? KeychainStore.set(data, account: "session.apple")
+            }
+        }
+        signOut()
+    }
+
     #if DEBUG
     /// Bypasses the auth sheet so `-demoSeed` can produce README screenshots.
     func signInDemo() {

@@ -91,6 +91,19 @@ final class PlayerStore: ObservableObject {
         scheduleSave()
     }
 
+    /// Wipes every roster, at-bat, and team entry — in memory and on disk.
+    /// Used by the Delete Account flow; pairs with `AuthStore.deleteAccount()`.
+    func deleteAllData() {
+        saveTask?.cancel()
+        saveTask = nil
+        players.removeAll()
+        atBats.removeAll()
+        teams.removeAll()
+        for url in [playersURL, atBatsURL, teamsURL] {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
     func entries(for playerID: Player.ID) -> [AtBatEntry] {
         atBats
             .filter { $0.playerID == playerID }

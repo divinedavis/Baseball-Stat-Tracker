@@ -5,6 +5,7 @@ struct RootView: View {
     @EnvironmentObject private var auth: AuthStore
     @State private var showingAdd = false
     @State private var path = NavigationPath()
+    @State private var showingDeleteConfirm = false
     @AppStorage("appearance") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
     var body: some View {
@@ -84,6 +85,11 @@ struct RootView: View {
                         } label: {
                             Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                         }
+                        Button(role: .destructive) {
+                            showingDeleteConfirm = true
+                        } label: {
+                            Label("Delete Account", systemImage: "trash")
+                        }
                     } label: {
                         Image(systemName: "person.crop.circle")
                     }
@@ -96,6 +102,12 @@ struct RootView: View {
             }
             .sheet(isPresented: $showingAdd) {
                 AddPlayerView()
+            }
+            .alert("Delete account?", isPresented: $showingDeleteConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) { deleteAccount() }
+            } message: {
+                Text("This permanently deletes your account and every roster, at-bat, and game log stored on this device. This cannot be undone.")
             }
             #if DEBUG
             .task {
@@ -112,6 +124,11 @@ struct RootView: View {
     private func delete(_ player: Player) {
         guard let idx = store.players.firstIndex(where: { $0.id == player.id }) else { return }
         store.delete(at: IndexSet(integer: idx))
+    }
+
+    private func deleteAccount() {
+        store.deleteAllData()
+        auth.deleteAccount()
     }
 }
 
