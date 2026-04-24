@@ -2,8 +2,6 @@
 
 <img src="docs/banner.png" alt="BARREL" width="100%" />
 
-<img src="BaseballStatTracker/Assets.xcassets/AppIcon.appiconset/AppIcon.png" alt="BARREL app icon" width="180" />
-
 # BARREL
 
 **Find the sweet spot.** One-tap at-bat logger for coaches, parents, and
