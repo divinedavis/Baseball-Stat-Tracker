@@ -64,10 +64,17 @@ you're holding a coffee in one hand.
 
 ## Install
 
-BARREL is currently in **TestFlight**. The App Store submission is in
-review; once it's approved the listing will go live. In the meantime the
-repo is primarily for the authors — public for transparency, not for
-community builds.
+<a href="https://apps.apple.com/app/id6762527182">
+  <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="60" />
+</a>
+
+BARREL is currently in **TestFlight** with the App Store submission in
+review — the link above goes live the moment the listing is approved. In
+the meantime the repo is primarily for the authors — public for
+transparency, not for community builds.
+
+- App Store: https://apps.apple.com/app/id6762527182
+- TestFlight (invite-only during review)
 
 ## License
 
