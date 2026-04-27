@@ -109,6 +109,12 @@ struct RootView: View {
             } message: {
                 Text("This permanently deletes your account and every roster, at-bat, and game log stored on this device. This cannot be undone.")
             }
+            .onChange(of: store.totalGamesLogged) { _, newValue in
+                ReviewPrompter.maybeRequestReview(gamesLogged: newValue)
+            }
+            .task {
+                ReviewPrompter.maybeRequestReview(gamesLogged: store.totalGamesLogged)
+            }
             #if DEBUG
             .task {
                 if CommandLine.arguments.contains("-demoOpenDetail"),

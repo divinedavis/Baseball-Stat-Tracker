@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		081C3D1BBC12A47E0E58B24E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6718C8BD1653FA60117CEDDC /* Assets.xcassets */; };
 		0AFBF722D9722253FB96E060 /* PlayerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */; };
+		17BB64A2C04DC2FAD0744A16 /* ReviewPrompter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */; };
 		3E92080B40368AC54F1D7667 /* BarrelNight@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 9A9E8BBE1C67B1B7329D9491 /* BarrelNight@3x.png */; };
 		49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */; };
 		4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */; };
@@ -37,6 +38,7 @@
 		428CFCA6B76D654B8BD950C5 /* AppIconScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconScheduler.swift; sourceTree = "<group>"; };
 		4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballStatTrackerApp.swift; sourceTree = "<group>"; };
 		47513A76126FC08BE675D9B1 /* PlayerRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerRow.swift; sourceTree = "<group>"; };
+		4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPrompter.swift; sourceTree = "<group>"; };
 		4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPlayerView.swift; sourceTree = "<group>"; };
 		4F76BE491231DFE216ECCE7F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5E30F52957D74423F14540E8 /* BaseballStatTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BaseballStatTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -125,6 +127,7 @@
 				4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */,
 				A279353CA9D3695C76B99C59 /* DemoSeeder.swift */,
 				4F76BE491231DFE216ECCE7F /* Info.plist */,
+				4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */,
 				11233A33223A3C188EF676AE /* Models */,
 				A0D77D627F5B43626F13412C /* Preview Content */,
 				07B09F12C04028EFC6D78215 /* Stores */,
@@ -219,6 +222,7 @@
 				BECB334E22CA5BD7F90A6F19 /* PlayerRow.swift in Sources */,
 				B7F8BA6EF030FBFB9E964C02 /* PlayerStats.swift in Sources */,
 				676B42F2234073CCE261CE47 /* PlayerStore.swift in Sources */,
+				17BB64A2C04DC2FAD0744A16 /* ReviewPrompter.swift in Sources */,
 				95E8E9A38BF83F5710B20E21 /* RootView.swift in Sources */,
 				83D88B912DA645AFCBECE747 /* UndoHistory.swift in Sources */,
 				D05C15DA78084C1C70065EE9 /* WaveBackground.swift in Sources */,
@@ -234,7 +238,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BaseballStatTracker/BaseballStatTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 38;
+				CURRENT_PROJECT_VERSION = 42;
 				INFOPLIST_FILE = BaseballStatTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -374,7 +378,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BaseballStatTracker/BaseballStatTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 38;
+				CURRENT_PROJECT_VERSION = 42;
 				INFOPLIST_FILE = BaseballStatTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

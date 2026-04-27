@@ -196,6 +196,22 @@ final class PlayerStore: ObservableObject {
             .sorted { $0.date > $1.date }
     }
 
+    /// Distinct (calendar day, gameNumber) keys across every at-bat and
+    /// session in the store — i.e. how many discrete games this user has
+    /// tracked, ignoring how many players were in each. Drives the
+    /// `ReviewPrompter` threshold.
+    var totalGamesLogged: Int {
+        let cal = Calendar.current
+        var keys = Set<DayGameKey>()
+        for ab in atBats {
+            keys.insert(DayGameKey(day: cal.startOfDay(for: ab.date), gameNumber: ab.gameNumber))
+        }
+        for s in gameSessions {
+            keys.insert(DayGameKey(day: cal.startOfDay(for: s.startTime), gameNumber: s.gameNumber))
+        }
+        return keys.count
+    }
+
     func stats(for playerID: Player.ID) -> PlayerStats {
         PlayerStats(entries: atBats.lazy.filter { $0.playerID == playerID })
     }
