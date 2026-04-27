@@ -37,7 +37,7 @@ struct AddPlayerView: View {
         }
     }
 
-    private func numericRow(label: String, value: Binding<Int>, range: ClosedRange<Int>) -> some View {
+    private func numericRow(label: LocalizedStringKey, value: Binding<Int>, range: ClosedRange<Int>) -> some View {
         HStack {
             Text(label)
             Spacer()

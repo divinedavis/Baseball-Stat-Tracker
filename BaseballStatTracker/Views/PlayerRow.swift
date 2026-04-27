@@ -6,7 +6,9 @@ struct PlayerRow: View {
 
     private var subtitle: String {
         var parts: [String] = [player.position]
-        if let age = player.age, age > 0 { parts.append("\(age) yo") }
+        if let age = player.age, age > 0 {
+            parts.append(String(localized: "\(age) yo"))
+        }
         if let team = player.team, !team.isEmpty { parts.append(team) }
         return parts.joined(separator: " • ")
     }

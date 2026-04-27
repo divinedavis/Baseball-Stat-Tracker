@@ -228,7 +228,7 @@ struct CountingStatsGrid: View {
 }
 
 struct CollapsibleHeader: View {
-    let title: String
+    let title: LocalizedStringKey
     @Binding var isExpanded: Bool
 
     var body: some View {
@@ -276,7 +276,7 @@ struct ContactChip: View {
     let quality: ContactQuality
 
     var body: some View {
-        Text(quality.label)
+        Text(LocalizedStringKey(quality.label))
             .font(.caption2.weight(.semibold))
             .foregroundStyle(tint)
             .padding(.horizontal, 8)
@@ -390,7 +390,7 @@ struct AtBatPad: View {
 }
 
 struct ContactToggle: View {
-    let title: String
+    let title: LocalizedStringKey
     let isOn: Bool
     let tint: Color
     let action: () -> Void

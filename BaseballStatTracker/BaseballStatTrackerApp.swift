@@ -27,9 +27,14 @@ struct BaseballStatTrackerApp: App {
     @StateObject private var auth = AuthStore()
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("appearance") private var appearanceRaw: String = AppearanceMode.system.rawValue
+    @AppStorage("appLanguage") private var languageRaw: String = ""
 
     private var appearance: AppearanceMode {
         AppearanceMode(rawValue: appearanceRaw) ?? .system
+    }
+
+    private var language: AppLanguage {
+        AppLanguage(rawValue: languageRaw) ?? AppLanguage.systemDefault
     }
 
     var body: some Scene {
@@ -38,6 +43,7 @@ struct BaseballStatTrackerApp: App {
                 .environmentObject(store)
                 .environmentObject(auth)
                 .preferredColorScheme(appearance.colorScheme)
+                .environment(\.locale, language.locale)
                 .onAppear {
                     AppIconScheduler.applyIfNeeded()
                     #if DEBUG

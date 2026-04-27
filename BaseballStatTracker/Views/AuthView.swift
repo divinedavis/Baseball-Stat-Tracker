@@ -4,12 +4,17 @@ import AuthenticationServices
 struct AuthView: View {
     @EnvironmentObject private var auth: AuthStore
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("appLanguage") private var languageRaw: String = ""
 
     @State private var showEmailSheet = false
     @State private var heroIndex = 1
 
     private let heroWords = ["Swing", "Track", "Win"]
     private let rotationInterval: TimeInterval = 2.6
+
+    private var currentLanguage: AppLanguage {
+        AppLanguage(rawValue: languageRaw) ?? AppLanguage.systemDefault
+    }
 
     var body: some View {
         ZStack {
@@ -24,6 +29,7 @@ struct AuthView: View {
             .frame(maxHeight: .infinity)
         }
         .ignoresSafeArea()
+        .overlay(alignment: .topTrailing) { languageToggle }
         .onAppear { startRotation() }
         .sheet(isPresented: $showEmailSheet) {
             EmailAuthSheet()
@@ -31,6 +37,22 @@ struct AuthView: View {
                 .environment(\.colorScheme, .light)
                 .presentationCornerRadius(28)
         }
+    }
+
+    private var languageToggle: some View {
+        Button {
+            languageRaw = currentLanguage.toggled().rawValue
+        } label: {
+            Text(currentLanguage.displayCode)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Capsule().fill(.white.opacity(0.18)))
+                .overlay(Capsule().stroke(.white.opacity(0.4), lineWidth: 1))
+        }
+        .padding(.trailing, 20)
+        .padding(.top, 8)
     }
 
     private var background: some View {
@@ -69,7 +91,7 @@ struct AuthView: View {
             if icon {
                 HeroIcon().frame(width: 44, height: 44)
             }
-            Text(heroWords[i])
+            Text(LocalizedStringKey(heroWords[i]))
                 .font(.system(size: fontSize, weight: bold ? .bold : .regular))
                 .foregroundStyle(.white)
                 .opacity(opacity)
@@ -382,14 +404,14 @@ private struct EmailAuthSheet: View {
 }
 
 private struct UnderlinedField: View {
-    let placeholder: String
+    let placeholder: LocalizedStringKey
     @Binding var text: String
     let ink: Color
     let field: EmailAuthSheet.Field
     @FocusState.Binding var focused: EmailAuthSheet.Field?
 
     init(
-        _ placeholder: String,
+        _ placeholder: LocalizedStringKey,
         text: Binding<String>,
         ink: Color,
         field: EmailAuthSheet.Field,
@@ -418,14 +440,14 @@ private struct UnderlinedField: View {
 }
 
 private struct UnderlinedSecureField: View {
-    let placeholder: String
+    let placeholder: LocalizedStringKey
     @Binding var text: String
     let ink: Color
     let field: EmailAuthSheet.Field
     @FocusState.Binding var focused: EmailAuthSheet.Field?
 
     init(
-        _ placeholder: String,
+        _ placeholder: LocalizedStringKey,
         text: Binding<String>,
         ink: Color,
         field: EmailAuthSheet.Field,

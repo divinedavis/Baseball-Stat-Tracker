@@ -10,6 +10,7 @@
 		081C3D1BBC12A47E0E58B24E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6718C8BD1653FA60117CEDDC /* Assets.xcassets */; };
 		0AFBF722D9722253FB96E060 /* PlayerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */; };
 		17BB64A2C04DC2FAD0744A16 /* ReviewPrompter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */; };
+		3226AE0D999626195A8B1B54 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */; };
 		3E92080B40368AC54F1D7667 /* BarrelNight@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 9A9E8BBE1C67B1B7329D9491 /* BarrelNight@3x.png */; };
 		49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */; };
 		4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */; };
@@ -26,6 +27,7 @@
 		CA558154609F2894612DF88B /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 995483BEF01B78D0C6285594 /* AuthStore.swift */; };
 		D05C15DA78084C1C70065EE9 /* WaveBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED32C6984E99727813EE4F5 /* WaveBackground.swift */; };
 		D73887A94E1D6B07F635EE38 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCE2D4E520B221A57E7707E7 /* Player.swift */; };
+		E3D482E93A96132DE0A3939C /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7962E15CCF8942863A3C92DE /* AppLanguage.swift */; };
 		EA58750FE637DD2DC1C93DE1 /* BarrelShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 966AAC296C0F9EA75DA8A476 /* BarrelShape.swift */; };
 		FACA664DB6025ADC1C4D797D /* AtBatEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2AB7EA22585D77EC6852E41 /* AtBatEntry.swift */; };
 /* End PBXBuildFile section */
@@ -43,12 +45,14 @@
 		4F76BE491231DFE216ECCE7F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5E30F52957D74423F14540E8 /* BaseballStatTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BaseballStatTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6718C8BD1653FA60117CEDDC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7962E15CCF8942863A3C92DE /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		966AAC296C0F9EA75DA8A476 /* BarrelShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarrelShape.swift; sourceTree = "<group>"; };
 		995483BEF01B78D0C6285594 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		9A9E8BBE1C67B1B7329D9491 /* BarrelNight@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "BarrelNight@3x.png"; sourceTree = "<group>"; };
 		A06A5665AB7820CE358C3251 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		A279353CA9D3695C76B99C59 /* DemoSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoSeeder.swift; sourceTree = "<group>"; };
 		B2AB7EA22585D77EC6852E41 /* AtBatEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtBatEntry.swift; sourceTree = "<group>"; };
+		B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerDetailView.swift; sourceTree = "<group>"; };
 		C4FC6C5DDDF52928C27E2C8F /* BarrelNight@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "BarrelNight@2x.png"; sourceTree = "<group>"; };
 		CED32C6984E99727813EE4F5 /* WaveBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveBackground.swift; sourceTree = "<group>"; };
@@ -120,6 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				428CFCA6B76D654B8BD950C5 /* AppIconScheduler.swift */,
+				7962E15CCF8942863A3C92DE /* AppLanguage.swift */,
 				6718C8BD1653FA60117CEDDC /* Assets.xcassets */,
 				C4FC6C5DDDF52928C27E2C8F /* BarrelNight@2x.png */,
 				9A9E8BBE1C67B1B7329D9491 /* BarrelNight@3x.png */,
@@ -127,6 +132,7 @@
 				4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */,
 				A279353CA9D3695C76B99C59 /* DemoSeeder.swift */,
 				4F76BE491231DFE216ECCE7F /* Info.plist */,
+				B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */,
 				4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */,
 				11233A33223A3C188EF676AE /* Models */,
 				A0D77D627F5B43626F13412C /* Preview Content */,
@@ -177,6 +183,7 @@
 			knownRegions = (
 				Base,
 				en,
+				es,
 			);
 			mainGroup = 5DBC0F3EADD206B9721FAFEB;
 			minimizedProjectReferenceProxies = 1;
@@ -198,6 +205,7 @@
 				081C3D1BBC12A47E0E58B24E /* Assets.xcassets in Resources */,
 				8163C8FACCAF59E93F310A85 /* BarrelNight@2x.png in Resources */,
 				3E92080B40368AC54F1D7667 /* BarrelNight@3x.png in Resources */,
+				3226AE0D999626195A8B1B54 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -210,6 +218,7 @@
 			files = (
 				49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */,
 				779346DC4E2513AA2A7BDD46 /* AppIconScheduler.swift in Sources */,
+				E3D482E93A96132DE0A3939C /* AppLanguage.swift in Sources */,
 				FACA664DB6025ADC1C4D797D /* AtBatEntry.swift in Sources */,
 				CA558154609F2894612DF88B /* AuthStore.swift in Sources */,
 				8D0A87F290719AB3431B5C01 /* AuthView.swift in Sources */,

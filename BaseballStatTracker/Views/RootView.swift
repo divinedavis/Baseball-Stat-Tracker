@@ -54,7 +54,7 @@ struct RootView: View {
                     .background(Color(.systemGroupedBackground))
                 }
             }
-            .navigationTitle("Player")
+            .navigationTitle("Players")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -75,7 +75,7 @@ struct RootView: View {
                         }
                         Picker(selection: $appearanceRaw) {
                             ForEach(AppearanceMode.allCases) { mode in
-                                Text(mode.label).tag(mode.rawValue)
+                                Text(LocalizedStringKey(mode.label)).tag(mode.rawValue)
                             }
                         } label: {
                             Label("Appearance", systemImage: "moon")
