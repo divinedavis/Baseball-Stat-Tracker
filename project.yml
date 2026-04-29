@@ -17,7 +17,7 @@ targets:
     info:
       path: BaseballStatTracker/Info.plist
       properties:
-        CFBundleDisplayName: BARREL
+        CFBundleDisplayName: Barrel
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ITSAppUsesNonExemptEncryption: false
