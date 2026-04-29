@@ -7,6 +7,8 @@ struct Player: Identifiable, Codable, Hashable {
     var position: String
     var age: Int?
     var team: String?
+    var level: String?
+    var bats: String?
 
     init(
         id: UUID = UUID(),
@@ -14,7 +16,9 @@ struct Player: Identifiable, Codable, Hashable {
         number: Int,
         position: String,
         age: Int? = nil,
-        team: String? = nil
+        team: String? = nil,
+        level: String? = nil,
+        bats: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -22,5 +26,7 @@ struct Player: Identifiable, Codable, Hashable {
         self.position = position
         self.age = age
         self.team = team
+        self.level = level
+        self.bats = bats
     }
 }

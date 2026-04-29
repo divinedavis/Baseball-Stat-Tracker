@@ -30,8 +30,15 @@ struct PlayerDetailView: View {
     var body: some View {
         ScrollViewReader { proxy in
         List {
-            Section("Slash line") {
+            Section {
                 StatGrid(stats: stats)
+            } header: {
+                HStack {
+                    Text("Slash line")
+                    Spacer()
+                    Text("\(stats.atBats) AB")
+                        .foregroundStyle(.secondary)
+                }
             }
             .id("slash")
             Section {
@@ -322,6 +329,7 @@ struct AtBatPad: View {
     @ObservedObject var history: UndoHistory
 
     @State private var contact: ContactQuality? = nil
+    @State private var hitLocation: HitLocation? = nil
 
     private let outcomes: [AtBatOutcome] = [
         .single, .double, .triple, .homeRun,
@@ -331,6 +339,28 @@ struct AtBatPad: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text("Hit location")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                ContactToggle(
+                    title: "Left",
+                    isOn: hitLocation == .left,
+                    tint: .blue
+                ) { toggleLocation(.left) }
+                ContactToggle(
+                    title: "Center",
+                    isOn: hitLocation == .center,
+                    tint: .blue
+                ) { toggleLocation(.center) }
+                ContactToggle(
+                    title: "Right",
+                    isOn: hitLocation == .right,
+                    tint: .blue
+                ) { toggleLocation(.right) }
+            }
+
             HStack(spacing: 8) {
                 Text("Contact")
                     .font(.caption.weight(.semibold))
@@ -373,11 +403,16 @@ struct AtBatPad: View {
         contact = contact == quality ? nil : quality
     }
 
+    private func toggleLocation(_ location: HitLocation) {
+        hitLocation = hitLocation == location ? nil : location
+    }
+
     private func record(_ outcome: AtBatOutcome) {
         let entry = store.recordAtBat(
             for: playerID,
             outcome: outcome,
             contact: contact,
+            hitLocation: hitLocation,
             at: .now,
             gameNumber: gameNumber
         )
@@ -386,6 +421,7 @@ struct AtBatPad: View {
             redo: { [weak store] in store?.restore(entry) }
         )
         contact = nil
+        hitLocation = nil
     }
 }
 
@@ -420,6 +456,7 @@ struct GameLogRow: View {
     let playerID: Player.ID
     let key: DayGameKey
     @ObservedObject var history: UndoHistory
+    @State private var editingEntry: AtBatEntry? = nil
 
     private var entries: [AtBatEntry] {
         store.entries(for: playerID, on: key.day, gameNumber: key.gameNumber)
@@ -442,6 +479,13 @@ struct GameLogRow: View {
                         ContactChip(quality: contact)
                     }
                     Spacer()
+                    Button {
+                        editingEntry = entry
+                    } label: {
+                        Image(systemName: "pencil")
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
                     Button(role: .destructive) {
                         remove(entry)
                     } label: {
@@ -463,6 +507,10 @@ struct GameLogRow: View {
                 Spacer()
             }
         }
+        .sheet(item: $editingEntry) { entry in
+            EditAtBatSheet(original: entry, history: history)
+                .environmentObject(store)
+        }
     }
 
     private func remove(_ entry: AtBatEntry) {
@@ -471,5 +519,95 @@ struct GameLogRow: View {
             undo: { [weak store] in store?.restore(entry) },
             redo: { [weak store] in store?.deleteAtBat(id: entry.id) }
         )
+    }
+}
+
+struct EditAtBatSheet: View {
+    @EnvironmentObject private var store: PlayerStore
+    @Environment(\.dismiss) private var dismiss
+    let original: AtBatEntry
+    @ObservedObject var history: UndoHistory
+
+    @State private var outcome: AtBatOutcome
+    @State private var date: Date
+    @State private var contact: ContactQuality?
+    @State private var hitLocation: HitLocation?
+
+    private let outcomes: [AtBatOutcome] = [
+        .single, .double, .triple, .homeRun,
+        .walk, .strikeout, .stolenBase, .rbi,
+        .groundOut, .reachedOnError, .lineOut, .bunt
+    ]
+
+    init(original: AtBatEntry, history: UndoHistory) {
+        self.original = original
+        self.history = history
+        _outcome = State(initialValue: original.outcome)
+        _date = State(initialValue: original.date)
+        _contact = State(initialValue: original.contact)
+        _hitLocation = State(initialValue: original.hitLocation)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Outcome") {
+                    Picker("Outcome", selection: $outcome) {
+                        ForEach(outcomes) { o in
+                            Text(o.label).tag(o)
+                        }
+                    }
+                }
+
+                Section("When") {
+                    DatePicker("Time", selection: $date)
+                }
+
+                Section("Hit location") {
+                    Picker("Hit location", selection: $hitLocation) {
+                        Text("None").tag(HitLocation?.none)
+                        ForEach(HitLocation.allCases) { l in
+                            Text(LocalizedStringKey(l.label)).tag(HitLocation?.some(l))
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section("Contact") {
+                    Picker("Contact", selection: $contact) {
+                        Text("None").tag(ContactQuality?.none)
+                        ForEach(ContactQuality.allCases) { q in
+                            Text(LocalizedStringKey(q.label)).tag(ContactQuality?.some(q))
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+            .navigationTitle("Edit at-bat")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                }
+            }
+        }
+    }
+
+    private func save() {
+        var updated = original
+        updated.outcome = outcome
+        updated.date = date
+        updated.contact = contact
+        updated.hitLocation = hitLocation
+        store.updateAtBat(updated)
+        let before = original
+        history.register(
+            undo: { [weak store] in store?.updateAtBat(before) },
+            redo: { [weak store] in store?.updateAtBat(updated) }
+        )
+        dismiss()
     }
 }

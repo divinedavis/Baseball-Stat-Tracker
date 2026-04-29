@@ -8,8 +8,15 @@ struct AddPlayerView: View {
     @State private var number: Int = 0
     @State private var age: Int = 0
     @State private var position: String = "CF"
+    @State private var level: String = "Little League"
+    @State private var bats: String = "Right"
 
     private let positions = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"]
+    private let levels = [
+        "T-Ball", "Coach Pitch", "Machine Pitch", "Little League",
+        "Travel", "Middle School", "High School",
+    ]
+    private let battingHands = ["Right", "Left", "Switch"]
 
     var body: some View {
         NavigationStack {
@@ -20,6 +27,12 @@ struct AddPlayerView: View {
                     numericRow(label: "Age", value: $age, range: 0...21)
                     Picker("Position", selection: $position) {
                         ForEach(positions, id: \.self) { Text($0) }
+                    }
+                    Picker("Level", selection: $level) {
+                        ForEach(levels, id: \.self) { Text(LocalizedStringKey($0)) }
+                    }
+                    Picker("Bats", selection: $bats) {
+                        ForEach(battingHands, id: \.self) { Text(LocalizedStringKey($0)) }
                     }
                 }
             }
@@ -61,7 +74,9 @@ struct AddPlayerView: View {
             number: number,
             position: position,
             age: age > 0 ? age : nil,
-            team: nil
+            team: nil,
+            level: level,
+            bats: bats
         )
         store.addPlayer(player)
         dismiss()

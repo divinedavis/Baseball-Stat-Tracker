@@ -90,6 +90,7 @@ final class PlayerStore: ObservableObject {
         for playerID: Player.ID,
         outcome: AtBatOutcome,
         contact: ContactQuality? = nil,
+        hitLocation: HitLocation? = nil,
         at date: Date = .now,
         gameNumber: Int = 1
     ) -> AtBatEntry {
@@ -98,6 +99,7 @@ final class PlayerStore: ObservableObject {
             date: date,
             outcome: outcome,
             contact: contact,
+            hitLocation: hitLocation,
             gameNumber: gameNumber
         )
         atBats.append(entry)
@@ -121,6 +123,17 @@ final class PlayerStore: ObservableObject {
     func deleteAtBat(id: AtBatEntry.ID) {
         atBats.removeAll { $0.id == id }
         scheduleSave()
+    }
+
+    /// Replace an at-bat in place. Returns the previous version so callers
+    /// can register an undo that restores the prior state.
+    @discardableResult
+    func updateAtBat(_ entry: AtBatEntry) -> AtBatEntry? {
+        guard let i = atBats.firstIndex(where: { $0.id == entry.id }) else { return nil }
+        let previous = atBats[i]
+        atBats[i] = entry
+        scheduleSave()
+        return previous
     }
 
     /// Wipes every roster, at-bat, team, and game-session entry — in memory and on disk.
