@@ -7,6 +7,7 @@ struct PlayerDetailView: View {
     let player: Player
 
     @AppStorage("playerDetail.showCountingStats") private var showCountingStats: Bool = false
+    @State private var editingEntry: AtBatEntry? = nil
 
     private var current: Player {
         store.players.first(where: { $0.id == player.id }) ?? player
@@ -69,12 +70,17 @@ struct PlayerDetailView: View {
                         GameLogRow(
                             playerID: current.id,
                             key: key,
-                            history: history
+                            history: history,
+                            editingEntry: $editingEntry
                         )
                     }
                 }
                 .id("gamelog")
             }
+        }
+        .sheet(item: $editingEntry) { entry in
+            EditAtBatSheet(original: entry, history: history)
+                .environmentObject(store)
         }
         #if DEBUG
         .task {
@@ -456,7 +462,7 @@ struct GameLogRow: View {
     let playerID: Player.ID
     let key: DayGameKey
     @ObservedObject var history: UndoHistory
-    @State private var editingEntry: AtBatEntry? = nil
+    @Binding var editingEntry: AtBatEntry?
 
     private var entries: [AtBatEntry] {
         store.entries(for: playerID, on: key.day, gameNumber: key.gameNumber)
@@ -506,10 +512,6 @@ struct GameLogRow: View {
                 }
                 Spacer()
             }
-        }
-        .sheet(item: $editingEntry) { entry in
-            EditAtBatSheet(original: entry, history: history)
-                .environmentObject(store)
         }
     }
 
