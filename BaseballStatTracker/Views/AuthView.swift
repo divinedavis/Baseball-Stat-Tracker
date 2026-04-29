@@ -115,7 +115,6 @@ struct AuthView: View {
 
     private var lowerCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            AppBadge()
             Text("Every at-bat,\ntracked.")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(.white)
@@ -196,21 +195,6 @@ private struct HeroIcon: View {
                 )
             )
             .frame(width: 6, height: height)
-    }
-}
-
-private struct AppBadge: View {
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(red: 10/255, green: 10/255, blue: 12/255))
-                .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
-            BarrelShape()
-                .stroke(Color("AccentColor"), style: StrokeStyle(lineWidth: 2.6, lineJoin: .round))
-                .aspectRatio(4.2, contentMode: .fit)
-                .padding(.horizontal, 6)
-        }
-        .frame(width: 46, height: 46)
     }
 }
 
