@@ -66,10 +66,11 @@ struct PlayerDetailView: View {
             }
             if !games.isEmpty {
                 Section("Game log") {
-                    ForEach(games) { key in
+                    ForEach(Array(games.enumerated()), id: \.element) { idx, key in
                         GameLogRow(
                             playerID: current.id,
                             key: key,
+                            displayNumber: idx + 1,
                             history: history,
                             editingEntry: $editingEntry
                         )
@@ -461,6 +462,7 @@ struct GameLogRow: View {
     @EnvironmentObject private var store: PlayerStore
     let playerID: Player.ID
     let key: DayGameKey
+    let displayNumber: Int
     @ObservedObject var history: UndoHistory
     @Binding var editingEntry: AtBatEntry?
 
@@ -504,7 +506,7 @@ struct GameLogRow: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("G\(key.gameNumber): \(key.day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))")
+                    Text("G\(displayNumber): \(key.day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))")
                         .font(.subheadline.weight(.semibold))
                     Text("\(entries.count) AB • \(StatFormatter.avg(gameStats.battingAverage)) AVG")
                         .font(.caption)
