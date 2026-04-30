@@ -13,13 +13,7 @@ struct RootView: View {
             Group {
                 if store.players.isEmpty {
                     ContentUnavailableView {
-                        VStack(spacing: 16) {
-                            BarrelShape()
-                                .stroke(Color("AccentColor"), style: StrokeStyle(lineWidth: 4, lineJoin: .round))
-                                .aspectRatio(4.2, contentMode: .fit)
-                                .frame(width: 120)
-                            Text("No players yet").font(.headline)
-                        }
+                        Text("No players yet").font(.headline)
                     } description: {
                         Text("Tap + to add your first player.")
                     }
