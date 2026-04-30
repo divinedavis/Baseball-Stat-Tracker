@@ -239,9 +239,10 @@ final class PlayerStore: ObservableObject {
     }
 
     /// One entry per (day, game) combination the player has started or recorded
-    /// at-bats for. Sorted most-recent day first, then game number ascending.
-    /// Sessions are included so a row appears immediately when "Add another game"
-    /// is tapped, even before any at-bats land in it.
+    /// at-bats for. Sorted oldest day first, then game number ascending, so the
+    /// log reads Game 1, 2, 3… in chronological order. Sessions are included so
+    /// a row appears immediately when "Add another game" is tapped, even before
+    /// any at-bats land in it.
     func playerGames(for playerID: Player.ID) -> [DayGameKey] {
         let cal = Calendar.current
         var keys = Set<DayGameKey>()
@@ -252,7 +253,7 @@ final class PlayerStore: ObservableObject {
             keys.insert(DayGameKey(day: cal.startOfDay(for: s.startTime), gameNumber: s.gameNumber))
         }
         return Array(keys).sorted { a, b in
-            if a.day != b.day { return a.day > b.day }
+            if a.day != b.day { return a.day < b.day }
             return a.gameNumber < b.gameNumber
         }
     }
