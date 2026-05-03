@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import CryptoKit
 import AuthenticationServices
+import Security
 
 struct AuthUser: Codable, Equatable {
     enum Method: String, Codable { case apple, email }
@@ -18,24 +19,44 @@ struct AuthUser: Codable, Equatable {
 ///
 /// Two entry methods:
 ///  - Sign in with Apple — delegates identity to Apple; we store userIdentifier + name/email.
-///  - Email + password — local credentials for users who predate the Apple flow.
-///    Passwords are SHA-256 hashed with a static salt and kept in Keychain.
+///  - Email + password — local credentials. Each credential carries a per-user
+///    16-byte random salt; the password is hashed as `SHA-256("bst.v3:" + salt + ":" + password)`.
+///    Legacy v2 (static-salt) credentials are dropped on first launch with this build,
+///    so any pre-existing email accounts must re-register or switch to Sign in with Apple.
 @MainActor
 final class AuthStore: ObservableObject {
     @Published private(set) var currentUser: AuthUser?
     @Published var lastError: String?
 
     private let sessionAccount = "session.currentUser"
-    private let credentialsAccount = "session.credentials"
+    private let credentialsAccount = "session.credentials.v3"
+    private let legacyCredentialsAccount = "session.credentials"
+    private let migrationFlagDefaultsKey = "bst.auth.migratedToV3"
 
     var isSignedIn: Bool { currentUser != nil }
 
     init() {
+        performV3MigrationIfNeeded()
         if let data = KeychainStore.get(account: sessionAccount),
            let user = try? JSONDecoder().decode(AuthUser.self, from: data) {
             self.currentUser = user
             Task { await self.validateAppleCredentialIfNeeded() }
         }
+    }
+
+    /// One-shot migration: nuke the legacy static-salt credentials store and
+    /// force-sign-out any active email session so the user has to re-register
+    /// against the new salted format. Apple sessions stay intact.
+    private func performV3MigrationIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: migrationFlagDefaultsKey) else { return }
+        KeychainStore.delete(account: legacyCredentialsAccount)
+        if let data = KeychainStore.get(account: sessionAccount),
+           let user = try? JSONDecoder().decode(AuthUser.self, from: data),
+           user.method == .email {
+            KeychainStore.delete(account: sessionAccount)
+        }
+        defaults.set(true, forKey: migrationFlagDefaultsKey)
     }
 
     // MARK: - Sign in with Apple
@@ -116,7 +137,7 @@ final class AuthStore: ObservableObject {
             lastError = "No account found for that email."
             return
         }
-        guard stored.passwordHash == hash(password) else {
+        guard stored.passwordHash == hash(password, salt: stored.salt) else {
             lastError = "Incorrect password."
             return
         }
@@ -148,7 +169,12 @@ final class AuthStore: ObservableObject {
             lastError = "An account with that email already exists."
             return
         }
-        creds[email] = StoredCredential(passwordHash: hash(password), displayName: trimmedName)
+        let salt = Self.generateSalt()
+        creds[email] = StoredCredential(
+            passwordHash: hash(password, salt: salt),
+            displayName: trimmedName,
+            salt: salt
+        )
         saveCredentials(creds)
         persist(AuthUser(
             method: .email,
@@ -212,6 +238,7 @@ final class AuthStore: ObservableObject {
     private struct StoredCredential: Codable {
         let passwordHash: String
         let displayName: String
+        let salt: String
     }
 
     private struct AppleProfile: Codable {
@@ -269,10 +296,21 @@ final class AuthStore: ObservableObject {
         return email.range(of: pattern, options: .regularExpression) != nil
     }
 
-    private func hash(_ password: String) -> String {
-        let salted = "bst.v2:" + password
+    private func hash(_ password: String, salt: String) -> String {
+        let salted = "bst.v3:" + salt + ":" + password
         let digest = SHA256.hash(data: Data(salted.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// 16 bytes from `SecRandomCopyBytes`, hex-encoded. Falls back to a UUID-derived
+    /// value only if the system RNG fails — which on iOS in practice never happens.
+    private static func generateSalt() -> String {
+        var bytes = [UInt8](repeating: 0, count: 16)
+        let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        if status == errSecSuccess {
+            return bytes.map { String(format: "%02x", $0) }.joined()
+        }
+        return UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     }
 }
 
