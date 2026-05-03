@@ -19,9 +19,11 @@ enum AppIconScheduler {
         let desired: String? = isNight(now: now) ? nightIconName : nil
         if app.alternateIconName == desired { return }
         app.setAlternateIconName(desired) { error in
+            #if DEBUG
             if let error {
                 print("AppIconScheduler: failed to switch icon — \(error.localizedDescription)")
             }
+            #endif
         }
     }
 

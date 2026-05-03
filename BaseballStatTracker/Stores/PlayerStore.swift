@@ -41,7 +41,9 @@ final class PlayerStore: ObservableObject {
     private var saveTask: Task<Void, Never>?
 
     init(filenamePrefix: String = "bst") {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        guard let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            fatalError("Documents directory unavailable — cannot initialize PlayerStore.")
+        }
         self.playersURL = dir.appendingPathComponent("\(filenamePrefix)-players.json")
         self.atBatsURL = dir.appendingPathComponent("\(filenamePrefix)-atbats.json")
         self.teamsURL = dir.appendingPathComponent("\(filenamePrefix)-teams.json")
@@ -296,17 +298,18 @@ final class PlayerStore: ObservableObject {
 
     private func save() {
         let encoder = jsonEncoder()
+        let writeOptions: Data.WritingOptions = [.atomic, .completeFileProtection]
         if let data = try? encoder.encode(players) {
-            try? data.write(to: playersURL, options: [.atomic])
+            try? data.write(to: playersURL, options: writeOptions)
         }
         if let data = try? encoder.encode(atBats) {
-            try? data.write(to: atBatsURL, options: [.atomic])
+            try? data.write(to: atBatsURL, options: writeOptions)
         }
         if let data = try? encoder.encode(teams) {
-            try? data.write(to: teamsURL, options: [.atomic])
+            try? data.write(to: teamsURL, options: writeOptions)
         }
         if let data = try? encoder.encode(gameSessions) {
-            try? data.write(to: gameSessionsURL, options: [.atomic])
+            try? data.write(to: gameSessionsURL, options: writeOptions)
         }
     }
 

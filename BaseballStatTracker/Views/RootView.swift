@@ -1,4 +1,5 @@
 import SwiftUI
+import LocalAuthentication
 
 struct RootView: View {
     @EnvironmentObject private var store: PlayerStore
@@ -127,8 +128,24 @@ struct RootView: View {
     }
 
     private func deleteAccount() {
-        store.deleteAllData()
-        auth.deleteAccount()
+        Task {
+            let context = LAContext()
+            var policyError: NSError?
+            if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &policyError) {
+                do {
+                    try await context.evaluatePolicy(
+                        .deviceOwnerAuthentication,
+                        localizedReason: "Confirm account deletion"
+                    )
+                } catch {
+                    return
+                }
+            }
+            await MainActor.run {
+                store.deleteAllData()
+                auth.deleteAccount()
+            }
+        }
     }
 }
 

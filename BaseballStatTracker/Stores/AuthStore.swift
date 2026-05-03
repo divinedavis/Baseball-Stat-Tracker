@@ -80,7 +80,7 @@ final class AuthStore: ObservableObject {
         }
     }
 
-    private func validateAppleCredentialIfNeeded() async {
+    func validateAppleCredentialIfNeeded() async {
         guard let user = currentUser, user.method == .apple else { return }
         let provider = ASAuthorizationAppleIDProvider()
         do {

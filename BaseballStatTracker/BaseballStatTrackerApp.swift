@@ -51,7 +51,10 @@ struct BaseballStatTrackerApp: App {
                     #endif
                 }
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .active { AppIconScheduler.applyIfNeeded() }
+                    if phase == .active {
+                        AppIconScheduler.applyIfNeeded()
+                        Task { await auth.validateAppleCredentialIfNeeded() }
+                    }
                 }
         }
     }
