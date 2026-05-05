@@ -133,6 +133,7 @@ struct AuthView: View {
                 onRequest: { req in
                     auth.clearError()
                     req.requestedScopes = [.fullName, .email]
+                    req.nonce = auth.appleNonce()
                 },
                 onCompletion: { result in
                     auth.handleAppleAuthorization(result)

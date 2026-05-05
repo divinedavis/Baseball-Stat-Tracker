@@ -7,28 +7,35 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		02FCF7C64DA1DAE1A0526223 /* AIPaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9FAAD978BF107AF775D782 /* AIPaywallView.swift */; };
 		081C3D1BBC12A47E0E58B24E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6718C8BD1653FA60117CEDDC /* Assets.xcassets */; };
 		0AFBF722D9722253FB96E060 /* PlayerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */; };
 		17BB64A2C04DC2FAD0744A16 /* ReviewPrompter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */; };
 		3226AE0D999626195A8B1B54 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */; };
 		3E92080B40368AC54F1D7667 /* BarrelNight@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 9A9E8BBE1C67B1B7329D9491 /* BarrelNight@3x.png */; };
 		49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */; };
+		4D9381528E34593A236B9763 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8DCF87A785CF12DB805778F9 /* Supabase */; };
 		4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */; };
 		5F7715FEE34926B585A66338 /* DemoSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A279353CA9D3695C76B99C59 /* DemoSeeder.swift */; };
+		61CA2F222EE946B41A54E446 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB3424F81DE04DD7A6F34F1 /* MainTabView.swift */; };
 		676B42F2234073CCE261CE47 /* PlayerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B153D5431BA4783907DCD64 /* PlayerStore.swift */; };
 		69118326CC18DE6929D0DCDF /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A06A5665AB7820CE358C3251 /* KeychainStore.swift */; };
+		6C70EEDD6D27EB02CD80B0E3 /* BillingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3B941D8E97823DCB79EB0C /* BillingStore.swift */; };
 		779346DC4E2513AA2A7BDD46 /* AppIconScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 428CFCA6B76D654B8BD950C5 /* AppIconScheduler.swift */; };
 		8163C8FACCAF59E93F310A85 /* BarrelNight@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = C4FC6C5DDDF52928C27E2C8F /* BarrelNight@2x.png */; };
 		83D88B912DA645AFCBECE747 /* UndoHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106454408A40E260FC97E16B /* UndoHistory.swift */; };
 		8D0A87F290719AB3431B5C01 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28F22ED4002D2D00827719AB /* AuthView.swift */; };
 		95E8E9A38BF83F5710B20E21 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E39437343090B7B311914B1E /* RootView.swift */; };
+		A71E1B9BEDCD4F340309258A /* AIChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB39DE9088CA19C675DBF88 /* AIChatView.swift */; };
 		B7F8BA6EF030FBFB9E964C02 /* PlayerStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44A9B9EB7A435FA4569D446 /* PlayerStats.swift */; };
 		BECB334E22CA5BD7F90A6F19 /* PlayerRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47513A76126FC08BE675D9B1 /* PlayerRow.swift */; };
 		CA558154609F2894612DF88B /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 995483BEF01B78D0C6285594 /* AuthStore.swift */; };
 		D05C15DA78084C1C70065EE9 /* WaveBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED32C6984E99727813EE4F5 /* WaveBackground.swift */; };
+		D73824252E60A95BB4A881F9 /* AIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5326ADF3D1E7819A3C1EB36C /* AIClient.swift */; };
 		D73887A94E1D6B07F635EE38 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCE2D4E520B221A57E7707E7 /* Player.swift */; };
 		E3D482E93A96132DE0A3939C /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7962E15CCF8942863A3C92DE /* AppLanguage.swift */; };
 		EA58750FE637DD2DC1C93DE1 /* BarrelShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 966AAC296C0F9EA75DA8A476 /* BarrelShape.swift */; };
+		EF1FF6B4044F883FC56E6697 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C80A685D2D29D9F427DC23 /* SupabaseClient.swift */; };
 		FACA664DB6025ADC1C4D797D /* AtBatEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2AB7EA22585D77EC6852E41 /* AtBatEntry.swift */; };
 /* End PBXBuildFile section */
 
@@ -37,35 +44,53 @@
 		0B153D5431BA4783907DCD64 /* PlayerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerStore.swift; sourceTree = "<group>"; };
 		106454408A40E260FC97E16B /* UndoHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoHistory.swift; sourceTree = "<group>"; };
 		28F22ED4002D2D00827719AB /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		2B3B941D8E97823DCB79EB0C /* BillingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BillingStore.swift; sourceTree = "<group>"; };
 		428CFCA6B76D654B8BD950C5 /* AppIconScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconScheduler.swift; sourceTree = "<group>"; };
 		4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballStatTrackerApp.swift; sourceTree = "<group>"; };
 		47513A76126FC08BE675D9B1 /* PlayerRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerRow.swift; sourceTree = "<group>"; };
 		4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPrompter.swift; sourceTree = "<group>"; };
 		4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPlayerView.swift; sourceTree = "<group>"; };
 		4F76BE491231DFE216ECCE7F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		5326ADF3D1E7819A3C1EB36C /* AIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIClient.swift; sourceTree = "<group>"; };
 		5E30F52957D74423F14540E8 /* BaseballStatTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BaseballStatTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6718C8BD1653FA60117CEDDC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7962E15CCF8942863A3C92DE /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
+		8CB3424F81DE04DD7A6F34F1 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		966AAC296C0F9EA75DA8A476 /* BarrelShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarrelShape.swift; sourceTree = "<group>"; };
 		995483BEF01B78D0C6285594 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		9A9E8BBE1C67B1B7329D9491 /* BarrelNight@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "BarrelNight@3x.png"; sourceTree = "<group>"; };
 		A06A5665AB7820CE358C3251 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		A279353CA9D3695C76B99C59 /* DemoSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoSeeder.swift; sourceTree = "<group>"; };
+		A6C80A685D2D29D9F427DC23 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		B2AB7EA22585D77EC6852E41 /* AtBatEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtBatEntry.swift; sourceTree = "<group>"; };
 		B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerDetailView.swift; sourceTree = "<group>"; };
+		BBB39DE9088CA19C675DBF88 /* AIChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatView.swift; sourceTree = "<group>"; };
 		C4FC6C5DDDF52928C27E2C8F /* BarrelNight@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "BarrelNight@2x.png"; sourceTree = "<group>"; };
 		CED32C6984E99727813EE4F5 /* WaveBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveBackground.swift; sourceTree = "<group>"; };
 		D44A9B9EB7A435FA4569D446 /* PlayerStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerStats.swift; sourceTree = "<group>"; };
 		DCE2D4E520B221A57E7707E7 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		DD9FAAD978BF107AF775D782 /* AIPaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIPaywallView.swift; sourceTree = "<group>"; };
 		E39437343090B7B311914B1E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		DEB653DC42CC1587B2616D3A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4D9381528E34593A236B9763 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		07B09F12C04028EFC6D78215 /* Stores */ = {
 			isa = PBXGroup;
 			children = (
 				995483BEF01B78D0C6285594 /* AuthStore.swift */,
+				2B3B941D8E97823DCB79EB0C /* BillingStore.swift */,
 				A06A5665AB7820CE358C3251 /* KeychainStore.swift */,
 				0B153D5431BA4783907DCD64 /* PlayerStore.swift */,
 				106454408A40E260FC97E16B /* UndoHistory.swift */,
@@ -87,8 +112,11 @@
 			isa = PBXGroup;
 			children = (
 				4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */,
+				BBB39DE9088CA19C675DBF88 /* AIChatView.swift */,
+				DD9FAAD978BF107AF775D782 /* AIPaywallView.swift */,
 				28F22ED4002D2D00827719AB /* AuthView.swift */,
 				966AAC296C0F9EA75DA8A476 /* BarrelShape.swift */,
+				8CB3424F81DE04DD7A6F34F1 /* MainTabView.swift */,
 				B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */,
 				47513A76126FC08BE675D9B1 /* PlayerRow.swift */,
 				E39437343090B7B311914B1E /* RootView.swift */,
@@ -103,6 +131,15 @@
 				E8414F96CE476165F596CFFD /* BaseballStatTracker */,
 				96FE54C0D577536CFEB0DBB5 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		7D6BE2BC0BD1A09D9AA5AA00 /* Backend */ = {
+			isa = PBXGroup;
+			children = (
+				5326ADF3D1E7819A3C1EB36C /* AIClient.swift */,
+				A6C80A685D2D29D9F427DC23 /* SupabaseClient.swift */,
+			);
+			path = Backend;
 			sourceTree = "<group>";
 		};
 		96FE54C0D577536CFEB0DBB5 /* Products */ = {
@@ -134,6 +171,7 @@
 				4F76BE491231DFE216ECCE7F /* Info.plist */,
 				B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */,
 				4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */,
+				7D6BE2BC0BD1A09D9AA5AA00 /* Backend */,
 				11233A33223A3C188EF676AE /* Models */,
 				A0D77D627F5B43626F13412C /* Preview Content */,
 				07B09F12C04028EFC6D78215 /* Stores */,
@@ -151,6 +189,7 @@
 			buildPhases = (
 				861D5790A967BBC9C64075BA /* Sources */,
 				D393D9C7807E7ABC1FE2FF14 /* Resources */,
+				DEB653DC42CC1587B2616D3A /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -158,6 +197,7 @@
 			);
 			name = BaseballStatTracker;
 			packageProductDependencies = (
+				8DCF87A785CF12DB805778F9 /* Supabase */,
 			);
 			productName = BaseballStatTracker;
 			productReference = 5E30F52957D74423F14540E8 /* BaseballStatTracker.app */;
@@ -187,6 +227,9 @@
 			);
 			mainGroup = 5DBC0F3EADD206B9721FAFEB;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F494D94611603685898780BA /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 96FE54C0D577536CFEB0DBB5 /* Products */;
 			projectDirPath = "";
@@ -216,6 +259,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A71E1B9BEDCD4F340309258A /* AIChatView.swift in Sources */,
+				D73824252E60A95BB4A881F9 /* AIClient.swift in Sources */,
+				02FCF7C64DA1DAE1A0526223 /* AIPaywallView.swift in Sources */,
 				49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */,
 				779346DC4E2513AA2A7BDD46 /* AppIconScheduler.swift in Sources */,
 				E3D482E93A96132DE0A3939C /* AppLanguage.swift in Sources */,
@@ -224,8 +270,10 @@
 				8D0A87F290719AB3431B5C01 /* AuthView.swift in Sources */,
 				EA58750FE637DD2DC1C93DE1 /* BarrelShape.swift in Sources */,
 				4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */,
+				6C70EEDD6D27EB02CD80B0E3 /* BillingStore.swift in Sources */,
 				5F7715FEE34926B585A66338 /* DemoSeeder.swift in Sources */,
 				69118326CC18DE6929D0DCDF /* KeychainStore.swift in Sources */,
+				61CA2F222EE946B41A54E446 /* MainTabView.swift in Sources */,
 				D73887A94E1D6B07F635EE38 /* Player.swift in Sources */,
 				0AFBF722D9722253FB96E060 /* PlayerDetailView.swift in Sources */,
 				BECB334E22CA5BD7F90A6F19 /* PlayerRow.swift in Sources */,
@@ -233,6 +281,7 @@
 				676B42F2234073CCE261CE47 /* PlayerStore.swift in Sources */,
 				17BB64A2C04DC2FAD0744A16 /* ReviewPrompter.swift in Sources */,
 				95E8E9A38BF83F5710B20E21 /* RootView.swift in Sources */,
+				EF1FF6B4044F883FC56E6697 /* SupabaseClient.swift in Sources */,
 				83D88B912DA645AFCBECE747 /* UndoHistory.swift in Sources */,
 				D05C15DA78084C1C70065EE9 /* WaveBackground.swift in Sources */,
 			);
@@ -422,6 +471,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F494D94611603685898780BA /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8DCF87A785CF12DB805778F9 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F494D94611603685898780BA /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F7524C9988FFBD5B05CC4906 /* Project object */;
 }

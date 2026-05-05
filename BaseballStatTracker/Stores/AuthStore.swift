@@ -3,54 +3,65 @@ import Combine
 import CryptoKit
 import AuthenticationServices
 import Security
+import Supabase
 
 struct AuthUser: Codable, Equatable {
     enum Method: String, Codable { case apple, email }
     let method: Method
-    let identifier: String   // Apple sub id, or lowercased email
+    let identifier: String   // Supabase user id (uuid string)
     let displayName: String
     let email: String?
 }
 
-/// Local-only auth backed by the iOS Keychain so that:
-///  - sessions survive app relaunches,
-///  - sessions survive app deletion + reinstall on the same device,
-///  - signing out is the only way to end a session.
+/// Thin facade over Supabase Auth, plus a Keychain-cached snapshot of the
+/// current user so the launch screen can decide which view to render
+/// before the network round-trip completes.
 ///
-/// Two entry methods:
-///  - Sign in with Apple — delegates identity to Apple; we store userIdentifier + name/email.
-///  - Email + password — local credentials. Each credential carries a per-user
-///    16-byte random salt; the password is hashed as `SHA-256("bst.v3:" + salt + ":" + password)`.
-///    Legacy v2 (static-salt) credentials are dropped on first launch with this build,
-///    so any pre-existing email accounts must re-register or switch to Sign in with Apple.
+/// All sign-in / sign-up / sign-out paths route through Supabase. The
+/// previous local-only credential store (v3 salted hashes) is wiped on
+/// first launch with this build — email accounts must re-register
+/// against Supabase Auth, Apple accounts re-tap "Continue with Apple".
 @MainActor
 final class AuthStore: ObservableObject {
     @Published private(set) var currentUser: AuthUser?
     @Published var lastError: String?
+    @Published private(set) var isLoading = false
 
     private let sessionAccount = "session.currentUser"
-    private let credentialsAccount = "session.credentials.v3"
-    private let legacyCredentialsAccount = "session.credentials"
-    private let migrationFlagDefaultsKey = "bst.auth.migratedToV3"
+    private let migrationFlagDefaultsKey = "bst.auth.migratedToSupabase"
+    private let legacyV3Account = "session.credentials.v3"
+    private let legacyV2Account = "session.credentials"
+    private var pendingAppleNonce: String?
+    private var authStateTask: Task<Void, Never>?
 
     var isSignedIn: Bool { currentUser != nil }
+    var supabaseUserId: UUID? {
+        guard let user = currentUser else { return nil }
+        return UUID(uuidString: user.identifier)
+    }
 
     init() {
-        performV3MigrationIfNeeded()
+        performSupabaseMigrationIfNeeded()
         if let data = KeychainStore.get(account: sessionAccount),
            let user = try? JSONDecoder().decode(AuthUser.self, from: data) {
             self.currentUser = user
-            Task { await self.validateAppleCredentialIfNeeded() }
         }
+        observeAuthState()
+        Task { await refreshFromSupabase() }
     }
 
-    /// One-shot migration: nuke the legacy static-salt credentials store and
-    /// force-sign-out any active email session so the user has to re-register
-    /// against the new salted format. Apple sessions stay intact.
-    private func performV3MigrationIfNeeded() {
+    deinit {
+        authStateTask?.cancel()
+    }
+
+    /// One-shot wipe of legacy local-only credential stores. Apple users keep
+    /// their cached AuthUser until the next Supabase round-trip rejects it;
+    /// email users get force-signed-out so they re-register against Supabase.
+    private func performSupabaseMigrationIfNeeded() {
         let defaults = UserDefaults.standard
         guard !defaults.bool(forKey: migrationFlagDefaultsKey) else { return }
-        KeychainStore.delete(account: legacyCredentialsAccount)
+        KeychainStore.delete(account: legacyV2Account)
+        KeychainStore.delete(account: legacyV3Account)
         if let data = KeychainStore.get(account: sessionAccount),
            let user = try? JSONDecoder().decode(AuthUser.self, from: data),
            user.method == .email {
@@ -59,73 +70,144 @@ final class AuthStore: ObservableObject {
         defaults.set(true, forKey: migrationFlagDefaultsKey)
     }
 
+    private func observeAuthState() {
+        authStateTask = Task { [weak self] in
+            for await change in SupabaseService.client.auth.authStateChanges {
+                guard let self else { return }
+                await MainActor.run {
+                    switch change.event {
+                    case .signedIn, .tokenRefreshed, .userUpdated:
+                        if let session = change.session {
+                            self.persistFromSupabaseUser(session.user)
+                        }
+                    case .signedOut:
+                        self.clearLocalSession()
+                    default:
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    private func refreshFromSupabase() async {
+        do {
+            let session = try await SupabaseService.client.auth.session
+            persistFromSupabaseUser(session.user)
+        } catch {
+            // No session — clear any stale Apple cache.
+            clearLocalSession()
+        }
+    }
+
+    private func persistFromSupabaseUser(_ user: User) {
+        let provider = user.appMetadata["provider"]?.stringValue ?? "email"
+        let method: AuthUser.Method = (provider == "apple") ? .apple : .email
+        let nameFromMeta = user.userMetadata["display_name"]?.stringValue
+            ?? user.userMetadata["full_name"]?.stringValue
+        let displayName = nameFromMeta?.isEmpty == false
+            ? nameFromMeta!
+            : (user.email?.components(separatedBy: "@").first ?? "Player")
+        let mapped = AuthUser(
+            method: method,
+            identifier: user.id.uuidString,
+            displayName: displayName,
+            email: user.email
+        )
+        currentUser = mapped
+        if let data = try? JSONEncoder().encode(mapped) {
+            try? KeychainStore.set(data, account: sessionAccount)
+        }
+    }
+
+    private func clearLocalSession() {
+        currentUser = nil
+        KeychainStore.delete(account: sessionAccount)
+    }
+
+    func clearError() { lastError = nil }
+
+    #if DEBUG
+    /// Injects a local-only user for `-demoSeed` screenshot runs. Skips
+    /// Supabase entirely — AI features stay locked because there's no JWT.
+    func signInDemo() {
+        let demo = AuthUser(
+            method: .email,
+            identifier: UUID().uuidString,
+            displayName: "Coach Davis",
+            email: "coach@example.com"
+        )
+        currentUser = demo
+        if let data = try? JSONEncoder().encode(demo) {
+            try? KeychainStore.set(data, account: sessionAccount)
+        }
+    }
+    #endif
+
     // MARK: - Sign in with Apple
+
+    /// Returns the SHA-256 nonce to pass to `ASAuthorizationAppleIDRequest.nonce`,
+    /// while caching the raw value for the Supabase exchange.
+    func appleNonce() -> String {
+        let raw = Self.randomNonce()
+        pendingAppleNonce = raw
+        return Self.sha256(raw)
+    }
 
     func handleAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
         switch result {
         case .failure:
-            // Silently ignore every failure path from the Apple sheet — cancel,
-            // dismiss, simulator-has-no-Apple-ID (error 1000 .unknown), and
-            // transient network blips. If the sign-in didn't succeed, the user
-            // is still on this screen and can retry. A red error line for a
-            // user-initiated cancel is worse UX than staying quiet.
             return
         case .success(let auth):
-            guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else {
-                lastError = "Unexpected credential type."
+            guard let credential = auth.credential as? ASAuthorizationAppleIDCredential,
+                  let tokenData = credential.identityToken,
+                  let token = String(data: tokenData, encoding: .utf8) else {
+                lastError = "Sign in with Apple failed."
                 return
             }
-            let userID = credential.user
-            let email = credential.email
-            let fullName = credential.fullName
-            let composedName: String? = [fullName?.givenName, fullName?.familyName]
+            guard let rawNonce = pendingAppleNonce else {
+                lastError = "Sign in with Apple failed (missing nonce)."
+                return
+            }
+            let displayName: String? = [credential.fullName?.givenName,
+                                        credential.fullName?.familyName]
                 .compactMap { $0 }
                 .joined(separator: " ")
                 .nilIfEmpty
-
-            // Apple only returns name/email the first time. If we've seen this user before,
-            // fall back to the previously-stored display name.
-            let previous = storedAppleProfile(for: userID)
-            let displayName = composedName
-                ?? previous?.displayName
-                ?? (email?.components(separatedBy: "@").first ?? "Player")
-
-            let user = AuthUser(
-                method: .apple,
-                identifier: userID,
-                displayName: displayName,
-                email: email ?? previous?.email
-            )
-            saveAppleProfile(user)
-            persist(user)
-        }
-    }
-
-    func validateAppleCredentialIfNeeded() async {
-        guard let user = currentUser, user.method == .apple else { return }
-        let provider = ASAuthorizationAppleIDProvider()
-        do {
-            let state = try await provider.credentialState(forUserID: user.identifier)
-            switch state {
-            case .authorized:
-                return
-            case .revoked, .notFound:
-                signOut()
-            case .transferred:
-                return
-            @unknown default:
-                return
+            isLoading = true
+            Task {
+                defer {
+                    Task { @MainActor in
+                        self.isLoading = false
+                        self.pendingAppleNonce = nil
+                    }
+                }
+                do {
+                    let session = try await SupabaseService.client.auth.signInWithIdToken(
+                        credentials: .init(provider: .apple, idToken: token, nonce: rawNonce)
+                    )
+                    if let displayName, !displayName.isEmpty {
+                        try? await SupabaseService.client.auth.update(
+                            user: UserAttributes(data: ["display_name": .string(displayName)])
+                        )
+                    }
+                    await MainActor.run {
+                        self.persistFromSupabaseUser(session.user)
+                    }
+                } catch {
+                    await MainActor.run {
+                        self.lastError = "Sign in with Apple failed: \(error.localizedDescription)"
+                    }
+                }
             }
-        } catch {
-            // Network / ephemeral errors — keep the session, try again next launch.
         }
     }
 
     // MARK: - Email + password
 
     func signIn(email: String, password: String) {
-        let email = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard isValidEmail(email) else {
+        let cleaned = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard isValidEmail(cleaned) else {
             lastError = "Enter a valid email."
             return
         }
@@ -133,26 +215,26 @@ final class AuthStore: ObservableObject {
             lastError = "Password must be at least 6 characters."
             return
         }
-        guard let stored = storedCredentials()[email] else {
-            lastError = "No account found for that email."
-            return
+        isLoading = true
+        Task {
+            defer { Task { @MainActor in self.isLoading = false } }
+            do {
+                let session = try await SupabaseService.client.auth.signIn(
+                    email: cleaned, password: password
+                )
+                await MainActor.run { self.persistFromSupabaseUser(session.user) }
+            } catch {
+                await MainActor.run {
+                    self.lastError = self.friendlyAuthError(error)
+                }
+            }
         }
-        guard stored.passwordHash == hash(password, salt: stored.salt) else {
-            lastError = "Incorrect password."
-            return
-        }
-        persist(AuthUser(
-            method: .email,
-            identifier: email,
-            displayName: stored.displayName,
-            email: email
-        ))
     }
 
     func signUp(email: String, password: String, displayName: String) {
-        let email = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let cleaned = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isValidEmail(email) else {
+        guard isValidEmail(cleaned) else {
             lastError = "Enter a valid email."
             return
         }
@@ -164,153 +246,73 @@ final class AuthStore: ObservableObject {
             lastError = "Enter a display name."
             return
         }
-        var creds = storedCredentials()
-        if creds[email] != nil {
-            lastError = "An account with that email already exists."
-            return
+        isLoading = true
+        Task {
+            defer { Task { @MainActor in self.isLoading = false } }
+            do {
+                let response = try await SupabaseService.client.auth.signUp(
+                    email: cleaned,
+                    password: password,
+                    data: ["display_name": .string(trimmedName)]
+                )
+                if let session = response.session {
+                    await MainActor.run { self.persistFromSupabaseUser(session.user) }
+                } else {
+                    // Project requires email confirmation — surface that.
+                    await MainActor.run {
+                        self.lastError = "Check your email to confirm the account."
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.lastError = self.friendlyAuthError(error)
+                }
+            }
         }
-        let salt = Self.generateSalt()
-        creds[email] = StoredCredential(
-            passwordHash: hash(password, salt: salt),
-            displayName: trimmedName,
-            salt: salt
-        )
-        saveCredentials(creds)
-        persist(AuthUser(
-            method: .email,
-            identifier: email,
-            displayName: trimmedName,
-            email: email
-        ))
     }
 
     func signOut() {
-        currentUser = nil
-        KeychainStore.delete(account: sessionAccount)
+        Task {
+            try? await SupabaseService.client.auth.signOut()
+            await MainActor.run { self.clearLocalSession() }
+        }
     }
 
-    /// Permanently deletes the signed-in account's credentials from the
-    /// Keychain, then signs out. Apple 5.1.1(v) requires an in-app account
-    /// deletion path for any app that supports account creation.
-    ///
-    /// Caller should also wipe the user's on-device content (roster, at-bats)
-    /// via `PlayerStore.deleteAllData()` — this method only owns the
-    /// account/credential side of the delete.
+    /// Apple 5.1.1(v) compliance. Calls `auth.admin.deleteUser` indirectly via
+    /// a server-side delete-user RPC if you add one later; for now we sign
+    /// out and clear local data. The Supabase user row remains until you
+    /// remove it via the dashboard or a privileged edge function.
     func deleteAccount() {
-        guard let user = currentUser else { return }
-        switch user.method {
-        case .email:
-            var creds = storedCredentials()
-            creds.removeValue(forKey: user.identifier)
-            if creds.isEmpty {
-                KeychainStore.delete(account: credentialsAccount)
-            } else {
-                saveCredentials(creds)
-            }
-        case .apple:
-            var profiles = appleProfiles()
-            profiles.removeValue(forKey: user.identifier)
-            if profiles.isEmpty {
-                KeychainStore.delete(account: "session.apple")
-            } else if let data = try? JSONEncoder().encode(profiles) {
-                try? KeychainStore.set(data, account: "session.apple")
-            }
-        }
-        signOut()
-    }
-
-    #if DEBUG
-    /// Bypasses the auth sheet so `-demoSeed` can produce README screenshots.
-    func signInDemo() {
-        persist(AuthUser(
-            method: .email,
-            identifier: "coach@example.com",
-            displayName: "Coach Davis",
-            email: "coach@example.com"
-        ))
-    }
-    #endif
-
-    func clearError() { lastError = nil }
-
-    // MARK: - Credential storage
-
-    private struct StoredCredential: Codable {
-        let passwordHash: String
-        let displayName: String
-        let salt: String
-    }
-
-    private struct AppleProfile: Codable {
-        let userID: String
-        let displayName: String
-        let email: String?
-    }
-
-    private func storedCredentials() -> [String: StoredCredential] {
-        guard let data = KeychainStore.get(account: credentialsAccount),
-              let decoded = try? JSONDecoder().decode([String: StoredCredential].self, from: data) else {
-            return [:]
-        }
-        return decoded
-    }
-
-    private func saveCredentials(_ creds: [String: StoredCredential]) {
-        guard let data = try? JSONEncoder().encode(creds) else { return }
-        try? KeychainStore.set(data, account: credentialsAccount)
-    }
-
-    private func appleProfiles() -> [String: AppleProfile] {
-        guard let data = KeychainStore.get(account: "session.apple"),
-              let decoded = try? JSONDecoder().decode([String: AppleProfile].self, from: data) else {
-            return [:]
-        }
-        return decoded
-    }
-
-    private func storedAppleProfile(for userID: String) -> AppleProfile? {
-        appleProfiles()[userID]
-    }
-
-    private func saveAppleProfile(_ user: AuthUser) {
-        var profiles = appleProfiles()
-        profiles[user.identifier] = AppleProfile(
-            userID: user.identifier,
-            displayName: user.displayName,
-            email: user.email
-        )
-        guard let data = try? JSONEncoder().encode(profiles) else { return }
-        try? KeychainStore.set(data, account: "session.apple")
-    }
-
-    private func persist(_ user: AuthUser) {
-        currentUser = user
-        lastError = nil
-        if let data = try? JSONEncoder().encode(user) {
-            try? KeychainStore.set(data, account: sessionAccount)
+        Task {
+            try? await SupabaseService.client.auth.signOut()
+            await MainActor.run { self.clearLocalSession() }
         }
     }
+
+    // MARK: - Helpers
 
     private func isValidEmail(_ email: String) -> Bool {
-        let pattern = #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#
-        return email.range(of: pattern, options: .regularExpression) != nil
+        email.range(of: #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#, options: .regularExpression) != nil
     }
 
-    private func hash(_ password: String, salt: String) -> String {
-        let salted = "bst.v3:" + salt + ":" + password
-        let digest = SHA256.hash(data: Data(salted.utf8))
+    private func friendlyAuthError(_ error: Error) -> String {
+        let msg = error.localizedDescription
+        if msg.contains("Invalid login") { return "Incorrect email or password." }
+        if msg.contains("already registered") { return "An account with that email already exists." }
+        return msg
+    }
+
+    private static func sha256(_ value: String) -> String {
+        let digest = SHA256.hash(data: Data(value.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 
-    /// 16 bytes from `SecRandomCopyBytes`, hex-encoded. Falls back to a UUID-derived
-    /// value only if the system RNG fails — which on iOS in practice never happens.
-    private static func generateSalt() -> String {
-        var bytes = [UInt8](repeating: 0, count: 16)
-        let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-        if status == errSecSuccess {
-            return bytes.map { String(format: "%02x", $0) }.joined()
-        }
-        return UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+    private static func randomNonce(length: Int = 32) -> String {
+        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._")
+        var bytes = [UInt8](repeating: 0, count: length)
+        let status = SecRandomCopyBytes(kSecRandomDefault, length, &bytes)
+        precondition(status == errSecSuccess, "SecRandomCopyBytes failed")
+        return String(bytes.map { charset[Int($0) % charset.count] })
     }
 }
 

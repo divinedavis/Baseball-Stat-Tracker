@@ -8,12 +8,19 @@ settings:
   base:
     SWIFT_VERSION: "5.9"
     DEVELOPMENT_TEAM: "CG89RY4W6R"
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.0.0
 targets:
   BaseballStatTracker:
     type: application
     platform: iOS
     sources:
       - path: BaseballStatTracker
+    dependencies:
+      - package: Supabase
+        product: Supabase
     info:
       path: BaseballStatTracker/Info.plist
       properties:

@@ -25,6 +25,7 @@ enum AppearanceMode: String, CaseIterable, Identifiable {
 struct BaseballStatTrackerApp: App {
     @StateObject private var store = PlayerStore()
     @StateObject private var auth = AuthStore()
+    @StateObject private var billing = BillingStore()
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("appearance") private var appearanceRaw: String = AppearanceMode.system.rawValue
     @AppStorage("appLanguage") private var languageRaw: String = ""
@@ -42,6 +43,7 @@ struct BaseballStatTrackerApp: App {
             AppGateway()
                 .environmentObject(store)
                 .environmentObject(auth)
+                .environmentObject(billing)
                 .preferredColorScheme(appearance.colorScheme)
                 .environment(\.locale, language.locale)
                 .onAppear {
@@ -49,11 +51,15 @@ struct BaseballStatTrackerApp: App {
                     #if DEBUG
                     DemoSeeder.seedIfRequested(store: store, auth: auth)
                     #endif
+                    Task {
+                        await billing.loadProducts()
+                        await billing.refreshEntitlements()
+                    }
                 }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
                         AppIconScheduler.applyIfNeeded()
-                        Task { await auth.validateAppleCredentialIfNeeded() }
+                        Task { await billing.refreshEntitlements() }
                     }
                 }
         }
@@ -66,7 +72,7 @@ struct AppGateway: View {
     var body: some View {
         Group {
             if auth.isSignedIn {
-                RootView()
+                MainTabView()
                     .transition(.opacity)
             } else {
                 AuthView()

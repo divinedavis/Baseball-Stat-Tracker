@@ -4,9 +4,11 @@ import LocalAuthentication
 struct RootView: View {
     @EnvironmentObject private var store: PlayerStore
     @EnvironmentObject private var auth: AuthStore
+    @EnvironmentObject private var billing: BillingStore
     @State private var showingAdd = false
     @State private var path = NavigationPath()
     @State private var showingDeleteConfirm = false
+    @State private var showingPaywall = false
     @AppStorage("appearance") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
     var body: some View {
@@ -75,6 +77,12 @@ struct RootView: View {
                         } label: {
                             Label("Appearance", systemImage: "moon")
                         }
+                        Button {
+                            showingPaywall = true
+                        } label: {
+                            Label(billing.tier == .free ? "Use AI" : "Manage AI",
+                                  systemImage: "sparkles")
+                        }
                         Button(role: .destructive) {
                             auth.signOut()
                         } label: {
@@ -97,6 +105,9 @@ struct RootView: View {
             }
             .sheet(isPresented: $showingAdd) {
                 AddPlayerView()
+            }
+            .sheet(isPresented: $showingPaywall) {
+                AIPaywallView()
             }
             .alert("Delete account?", isPresented: $showingDeleteConfirm) {
                 Button("Cancel", role: .cancel) {}
