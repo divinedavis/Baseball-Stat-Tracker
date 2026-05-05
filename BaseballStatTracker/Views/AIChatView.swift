@@ -18,6 +18,8 @@ struct AIChatView: View {
     @State private var showingPicker = false
     @State private var pickerItem: PhotosPickerItem?
 
+    @FocusState private var inputFocused: Bool
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -28,6 +30,8 @@ struct AIChatView: View {
                 }
                 composer
             }
+            .contentShape(Rectangle())
+            .onTapGesture { inputFocused = false }
             .navigationTitle("AI Coach")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -35,6 +39,10 @@ struct AIChatView: View {
                     Text(billing.tier.displayName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { inputFocused = false }
                 }
             }
         }
@@ -84,6 +92,7 @@ struct AIChatView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: messages.count) { _, _ in
                 if let last = messages.last {
                     withAnimation(.easeOut) { proxy.scrollTo(last.id, anchor: .bottom) }
@@ -119,6 +128,7 @@ struct AIChatView: View {
 
                 TextField("Message", text: $draft, axis: .vertical)
                     .textFieldStyle(.plain)
+                    .focused($inputFocused)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(
