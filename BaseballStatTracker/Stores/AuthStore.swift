@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import CryptoKit
 import AuthenticationServices
 import Security
 import Supabase
@@ -145,15 +146,16 @@ final class AuthStore: ObservableObject {
 
     // MARK: - Sign in with Apple
 
-    /// Returns the raw nonce to set on the Apple sign-in request, and caches
-    /// the same value for the Supabase exchange. Supabase Auth compares the
-    /// `nonce` parameter directly against the JWT's `nonce` claim with no
-    /// server-side hashing, so the value we send to Apple and the value we
-    /// send to Supabase must match exactly.
+    /// Apple's native Sign-In + Supabase pattern (per Supabase docs):
+    ///  - Set `request.nonce` to **SHA-256(rawNonce)**, hex-encoded.
+    ///  - Apple embeds that hashed value verbatim in the JWT's `nonce` claim.
+    ///  - Pass the **raw** nonce to `signInWithIdToken`.
+    ///  - Supabase Auth (GoTrue) hashes the raw nonce server-side and compares
+    ///    against the JWT's `nonce` claim.
     func appleNonce() -> String {
         let raw = Self.randomNonce()
         pendingAppleNonce = raw
-        return raw
+        return Self.sha256Hex(raw)
     }
 
     func handleAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
@@ -177,6 +179,11 @@ final class AuthStore: ObservableObject {
                 .joined(separator: " ")
                 .nilIfEmpty
             isLoading = true
+            // Diagnostic: surface what we're actually sending so a mismatch
+            // is debuggable from the screen, not from logs we can't read.
+            let jwtNonce = Self.decodeJWTNonce(token) ?? "?"
+            let rawHash = Self.sha256Hex(rawNonce)
+            let diagnostic = "jwt=\(jwtNonce.prefix(12)) raw=\(rawNonce.prefix(8)) hash(raw)=\(rawHash.prefix(12))"
             Task {
                 defer {
                     Task { @MainActor in
@@ -198,7 +205,7 @@ final class AuthStore: ObservableObject {
                     }
                 } catch {
                     await MainActor.run {
-                        self.lastError = "Sign in with Apple failed: \(error.localizedDescription)"
+                        self.lastError = "Apple sign-in failed — \(error.localizedDescription) [\(diagnostic)]"
                     }
                 }
             }
@@ -310,6 +317,27 @@ final class AuthStore: ObservableObject {
         let status = SecRandomCopyBytes(kSecRandomDefault, length, &bytes)
         precondition(status == errSecSuccess, "SecRandomCopyBytes failed")
         return String(bytes.map { charset[Int($0) % charset.count] })
+    }
+
+    private static func sha256Hex(_ value: String) -> String {
+        let digest = SHA256.hash(data: Data(value.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// Pulls the `nonce` claim out of an Apple-issued JWT for diagnostic
+    /// display only — does not validate the signature.
+    private static func decodeJWTNonce(_ jwt: String) -> String? {
+        let parts = jwt.split(separator: ".")
+        guard parts.count >= 2 else { return nil }
+        var payload = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let rem = payload.count % 4
+        if rem > 0 { payload.append(String(repeating: "=", count: 4 - rem)) }
+        guard let data = Data(base64Encoded: payload),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let nonce = json["nonce"] as? String else { return nil }
+        return nonce
     }
 }
 
