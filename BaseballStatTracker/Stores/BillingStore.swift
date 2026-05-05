@@ -96,7 +96,35 @@ final class BillingStore: ObservableObject {
                 }
             }
         }
+        // Fall back to the server's view of the subscription. Catches:
+        //  - admin / promo grants that don't go through StoreKit
+        //  - newly-installed devices where Transaction.currentEntitlements
+        //    hasn't synced yet
+        //  - webhook-updated state after a purchase on another device
+        if resolved == .free, let serverTier = await fetchServerTier() {
+            resolved = serverTier
+        }
         tier = resolved
+    }
+
+    private struct SubscriptionRow: Decodable {
+        let tier: String
+        let expires_at: Date?
+    }
+
+    private func fetchServerTier() async -> AITier? {
+        do {
+            let rows: [SubscriptionRow] = try await SupabaseService.client
+                .from("subscriptions")
+                .select("tier, expires_at")
+                .execute()
+                .value
+            guard let row = rows.first else { return nil }
+            if let expires = row.expires_at, expires < Date() { return .free }
+            return AITier(rawValue: row.tier)
+        } catch {
+            return nil
+        }
     }
 
     func purchase(_ product: Product, supabaseUserId: UUID) async {
