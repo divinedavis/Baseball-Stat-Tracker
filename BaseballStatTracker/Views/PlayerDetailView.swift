@@ -480,7 +480,7 @@ struct GameLogRow: View {
                     Text(entry.outcome.label)
                         .font(.system(.subheadline, design: .rounded).weight(.semibold))
                         .frame(minWidth: 44, alignment: .leading)
-                    Text(entry.date, style: .time)
+                    Text(entry.hitLocation?.label ?? "—")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     if let contact = entry.contact {
