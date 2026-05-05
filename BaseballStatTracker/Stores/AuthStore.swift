@@ -1,6 +1,5 @@
 import Foundation
 import Combine
-import CryptoKit
 import AuthenticationServices
 import Security
 import Supabase
@@ -146,12 +145,15 @@ final class AuthStore: ObservableObject {
 
     // MARK: - Sign in with Apple
 
-    /// Returns the SHA-256 nonce to pass to `ASAuthorizationAppleIDRequest.nonce`,
-    /// while caching the raw value for the Supabase exchange.
+    /// Returns the raw nonce to set on the Apple sign-in request, and caches
+    /// the same value for the Supabase exchange. Supabase Auth compares the
+    /// `nonce` parameter directly against the JWT's `nonce` claim with no
+    /// server-side hashing, so the value we send to Apple and the value we
+    /// send to Supabase must match exactly.
     func appleNonce() -> String {
         let raw = Self.randomNonce()
         pendingAppleNonce = raw
-        return Self.sha256(raw)
+        return raw
     }
 
     func handleAppleAuthorization(_ result: Result<ASAuthorization, Error>) {
@@ -300,11 +302,6 @@ final class AuthStore: ObservableObject {
         if msg.contains("Invalid login") { return "Incorrect email or password." }
         if msg.contains("already registered") { return "An account with that email already exists." }
         return msg
-    }
-
-    private static func sha256(_ value: String) -> String {
-        let digest = SHA256.hash(data: Data(value.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
     }
 
     private static func randomNonce(length: Int = 32) -> String {
