@@ -27,11 +27,13 @@ OUT.mkdir(parents=True, exist_ok=True)
 OUT_65.mkdir(parents=True, exist_ok=True)
 
 W, H = 1290, 2796  # APP_IPHONE_67 — covers iPhone 14/15/16/17 Pro Max
-BG = (135, 145, 250, 255)            # lavender / periwinkle blue
+BG = (10, 10, 12, 255)               # near-black, matches Barrel brand
 WHITE = (255, 255, 255, 255)
 BLACK = (15, 15, 18, 255)
 INK = (24, 24, 28, 255)
 SHADOW = (0, 0, 0, 90)
+GOLD = (212, 175, 55, 255)           # Barrel gold #D4AF37
+PHONE_BODY = (28, 28, 32, 255)       # charcoal — separates phone from bg
 
 DISPLAY = str(FONTS / "BagelFatOne-Regular.ttf")
 EMOJI = "/System/Library/Fonts/Apple Color Emoji.ttc"
@@ -113,8 +115,8 @@ def text_size(text: str, size: int):
 def tag_pill(text: str, size_pt: int = 38) -> Image.Image:
     tw, th = text_size(text, size_pt)
     pad_x, pad_y = 36, 14
-    pill = rounded_rect((tw + pad_x * 2, th + pad_y * 2 + 8), radius=999, fill=BLACK)
-    inner = text_layer(text, size_pt, color=WHITE, align="center")
+    pill = rounded_rect((tw + pad_x * 2, th + pad_y * 2 + 8), radius=999, fill=WHITE)
+    inner = text_layer(text, size_pt, color=BLACK, align="center")
     pill.alpha_composite(
         inner,
         ((pill.width - inner.width) // 2, (pill.height - inner.height) // 2),
@@ -160,8 +162,10 @@ def phone_mockup(screenshot_path: Path | None,
     p_w = width
     p_h = int(p_w * aspect)
     bezel = 18
-    # Body: black rounded rect
-    body = rounded_rect((p_w, p_h), radius=98, fill=BLACK)
+    # Body: charcoal so the phone is visible against the black canvas,
+    # with a thin gold ring to echo the Barrel brand mark.
+    body = rounded_rect((p_w, p_h), radius=98, fill=PHONE_BODY,
+                        stroke=GOLD, stroke_w=4)
     if screenshot_path and screenshot_path.exists():
         shot = Image.open(screenshot_path).convert("RGBA")
         # Resize shot to fill the inner area
@@ -185,7 +189,7 @@ def phone_mockup(screenshot_path: Path | None,
         ImageDraw.Draw(mask).rounded_rectangle((0, 0, inner_w - 1, inner_h - 1),
                                                 radius=80, fill=255)
         body.paste(shot, (bezel, bezel), mask)
-    body = drop_shadow(body, offset=(0, 28), blur=46, opacity=120)
+    body = drop_shadow(body, offset=(0, 28), blur=46, opacity=140)
     return rotated(body, rotation)
 
 
@@ -263,13 +267,14 @@ def synth_ai_phone(width: int = 920, rotation: float = -3.5) -> Image.Image:
     comp.alpha_composite(btn, (comp.width - 130, 22))
     screen.alpha_composite(comp, (40, composer_y))
 
-    # Compose into phone body
-    body = rounded_rect((p_w, p_h), radius=98, fill=BLACK)
+    # Compose into phone body (matches the photo-mockup styling)
+    body = rounded_rect((p_w, p_h), radius=98, fill=PHONE_BODY,
+                        stroke=GOLD, stroke_w=4)
     mask = Image.new("L", (inner_w, inner_h), 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, inner_w - 1, inner_h - 1),
                                             radius=80, fill=255)
     body.paste(screen, (bezel, bezel), mask)
-    body = drop_shadow(body, offset=(0, 28), blur=46, opacity=120)
+    body = drop_shadow(body, offset=(0, 28), blur=46, opacity=140)
     return rotated(body, rotation)
 
 
