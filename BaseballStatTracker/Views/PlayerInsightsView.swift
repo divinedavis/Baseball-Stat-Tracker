@@ -23,6 +23,7 @@ struct PlayerInsightsView: View {
                     header(p)
                 }
                 archetypeCard
+                thisYearCard
                 slashLineCard
                 sprayCard
                 plateDisciplineCard
@@ -45,6 +46,17 @@ struct PlayerInsightsView: View {
     }
     private var entries: [AtBatEntry] { store.entries(for: playerID) }
     private var stats: PlayerStats { store.stats(for: playerID) }
+
+    private var currentYear: Int {
+        Calendar.current.component(.year, from: .now)
+    }
+    private var yearEntries: [AtBatEntry] {
+        let cal = Calendar.current
+        return entries.filter { cal.component(.year, from: $0.date) == currentYear }
+    }
+    private var yearStats: PlayerStats {
+        PlayerStats(entries: yearEntries)
+    }
 
     // MARK: - Sections
 
@@ -87,10 +99,52 @@ struct PlayerInsightsView: View {
         }
     }
 
+    private var thisYearCard: some View {
+        let games = Set(yearEntries.map { e -> String in
+            let cal = Calendar.current
+            return "\(cal.startOfDay(for: e.date).timeIntervalSince1970)-\(e.gameNumber)"
+        }).count
+        return Card {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("\(currentYear) season")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(games) game\(games == 1 ? "" : "s")")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if yearStats.atBats == 0 && yearStats.walks == 0 {
+                    Text("No at-bats logged this year yet.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                } else {
+                    HStack(spacing: 0) {
+                        StatPill(label: "AVG", value: format(yearStats.battingAverage))
+                        StatPill(label: "OBP", value: format(yearStats.onBasePercentage))
+                        StatPill(label: "SLG", value: format(yearStats.sluggingPercentage))
+                        StatPill(label: "OPS", value: format(yearStats.ops))
+                    }
+                    HStack(spacing: 0) {
+                        StatPill(label: "H", value: "\(yearStats.hits)")
+                        StatPill(label: "2B", value: "\(yearStats.doubles)")
+                        StatPill(label: "3B", value: "\(yearStats.triples)")
+                        StatPill(label: "HR", value: "\(yearStats.homeRuns)")
+                        StatPill(label: "RBI", value: "\(yearStats.runsBattedIn)")
+                    }
+                    HStack(spacing: 0) {
+                        StatPill(label: "BB", value: "\(yearStats.walks)")
+                        StatPill(label: "K", value: "\(yearStats.strikeouts)")
+                        StatPill(label: "SB", value: "\(yearStats.stolenBases)")
+                        StatPill(label: "AB", value: "\(yearStats.atBats)")
+                    }
+                }
+            }
+        }
+    }
+
     private var slashLineCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Slash line").font(.caption).foregroundStyle(.secondary)
+                Text("Career").font(.caption).foregroundStyle(.secondary)
                 HStack(spacing: 0) {
                     StatPill(label: "AVG", value: format(stats.battingAverage))
                     StatPill(label: "OBP", value: format(stats.onBasePercentage))
