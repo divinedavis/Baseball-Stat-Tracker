@@ -2,12 +2,15 @@ import SwiftUI
 
 struct PlayerDetailView: View {
     @EnvironmentObject private var store: PlayerStore
+    @EnvironmentObject private var billing: BillingStore
     @StateObject private var history = UndoHistory()
 
     let player: Player
 
     @AppStorage("playerDetail.showCountingStats") private var showCountingStats: Bool = false
     @State private var editingEntry: AtBatEntry? = nil
+    @State private var showingInsights = false
+    @State private var showingPaywall = false
 
     private var current: Player {
         store.players.first(where: { $0.id == player.id }) ?? player
@@ -126,6 +129,19 @@ struct PlayerDetailView: View {
                     }
                     .disabled(!canAddAnotherGame)
 
+                    Button {
+                        if billing.tier == .free {
+                            showingPaywall = true
+                        } else {
+                            showingInsights = true
+                        }
+                    } label: {
+                        Label(billing.tier == .free
+                              ? "Insights — Pro"
+                              : "Insights",
+                              systemImage: "chart.bar.doc.horizontal")
+                    }
+
                     Button(role: .destructive) {
                         resetAll()
                     } label: {
@@ -138,6 +154,12 @@ struct PlayerDetailView: View {
         }
         .onAppear {
             store.ensureG1Session(for: current.id, on: .now)
+        }
+        .navigationDestination(isPresented: $showingInsights) {
+            PlayerInsightsView(playerID: current.id)
+        }
+        .sheet(isPresented: $showingPaywall) {
+            AIPaywallView()
         }
     }
 

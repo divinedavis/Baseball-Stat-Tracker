@@ -14,6 +14,7 @@
 		3226AE0D999626195A8B1B54 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */; };
 		3E92080B40368AC54F1D7667 /* BarrelNight@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 9A9E8BBE1C67B1B7329D9491 /* BarrelNight@3x.png */; };
 		49BFB657783B04140050BF3A /* AddPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */; };
+		4D06E1A19E51E470D2FF78B0 /* PlayerInsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B334E9B8F7BE7E5376BA5E03 /* PlayerInsightsView.swift */; };
 		4D9381528E34593A236B9763 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8DCF87A785CF12DB805778F9 /* Supabase */; };
 		4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4292B7537D147DD1CD5BDA8A /* BaseballStatTrackerApp.swift */; };
 		5F7715FEE34926B585A66338 /* DemoSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A279353CA9D3695C76B99C59 /* DemoSeeder.swift */; };
@@ -64,6 +65,7 @@
 		A6C80A685D2D29D9F427DC23 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		B2AB7EA22585D77EC6852E41 /* AtBatEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtBatEntry.swift; sourceTree = "<group>"; };
 		B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		B334E9B8F7BE7E5376BA5E03 /* PlayerInsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerInsightsView.swift; sourceTree = "<group>"; };
 		B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerDetailView.swift; sourceTree = "<group>"; };
 		BBB39DE9088CA19C675DBF88 /* AIChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatView.swift; sourceTree = "<group>"; };
 		C4FC6C5DDDF52928C27E2C8F /* BarrelNight@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "BarrelNight@2x.png"; sourceTree = "<group>"; };
@@ -118,6 +120,7 @@
 				966AAC296C0F9EA75DA8A476 /* BarrelShape.swift */,
 				8CB3424F81DE04DD7A6F34F1 /* MainTabView.swift */,
 				B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */,
+				B334E9B8F7BE7E5376BA5E03 /* PlayerInsightsView.swift */,
 				47513A76126FC08BE675D9B1 /* PlayerRow.swift */,
 				E39437343090B7B311914B1E /* RootView.swift */,
 				CED32C6984E99727813EE4F5 /* WaveBackground.swift */,
@@ -276,6 +279,7 @@
 				61CA2F222EE946B41A54E446 /* MainTabView.swift in Sources */,
 				D73887A94E1D6B07F635EE38 /* Player.swift in Sources */,
 				0AFBF722D9722253FB96E060 /* PlayerDetailView.swift in Sources */,
+				4D06E1A19E51E470D2FF78B0 /* PlayerInsightsView.swift in Sources */,
 				BECB334E22CA5BD7F90A6F19 /* PlayerRow.swift in Sources */,
 				B7F8BA6EF030FBFB9E964C02 /* PlayerStats.swift in Sources */,
 				676B42F2234073CCE261CE47 /* PlayerStore.swift in Sources */,
@@ -296,7 +300,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BaseballStatTracker/BaseballStatTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 63;
+				CURRENT_PROJECT_VERSION = 64;
 				INFOPLIST_FILE = BaseballStatTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -436,7 +440,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BaseballStatTracker/BaseballStatTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 63;
+				CURRENT_PROJECT_VERSION = 64;
 				INFOPLIST_FILE = BaseballStatTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
