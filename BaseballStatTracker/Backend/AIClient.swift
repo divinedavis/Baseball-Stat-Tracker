@@ -51,8 +51,12 @@ final class AIClient {
         guard let session = try? await SupabaseService.client.auth.session else {
             throw AIClientError.notSignedIn
         }
-        let userId = session.user.id.uuidString
-        let path = "\(userId)/\(UUID().uuidString).\(fileExtension)"
+        // Storage RLS compares against auth.uid()::text, which Postgres
+        // renders as lowercase. Swift's UUID.uuidString is uppercase, so we
+        // must lowercase both segments of the path for the owner-scoped
+        // policy to pass.
+        let userId = session.user.id.uuidString.lowercased()
+        let path = "\(userId)/\(UUID().uuidString.lowercased()).\(fileExtension)"
         _ = try await SupabaseService.client.storage
             .from(SupabaseConfig.storageBucket)
             .upload(
