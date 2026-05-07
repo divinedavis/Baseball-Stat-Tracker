@@ -40,10 +40,6 @@ struct AIChatView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") { inputFocused = false }
-                }
             }
         }
         .onChange(of: pickerItem) { _, item in
