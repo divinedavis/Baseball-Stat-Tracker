@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AddPlayerView: View {
     @EnvironmentObject private var store: PlayerStore
+    @EnvironmentObject private var billing: BillingStore
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String = ""
@@ -10,6 +11,7 @@ struct AddPlayerView: View {
     @State private var position: String = "CF"
     @State private var level: String = "Little League"
     @State private var bats: String = "Right"
+    @State private var showingPaywall = false
 
     private let positions = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"]
     private let levels = [
@@ -35,6 +37,15 @@ struct AddPlayerView: View {
                         ForEach(battingHands, id: \.self) { Text(LocalizedStringKey($0)) }
                     }
                 }
+
+                if billing.tier == .free {
+                    Section {
+                        ProUpsell { showingPaywall = true }
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
+                }
             }
             .navigationTitle("Add Player")
             .navigationBarTitleDisplayMode(.inline)
@@ -46,6 +57,9 @@ struct AddPlayerView: View {
                     Button("Save") { save() }
                         .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
+            }
+            .sheet(isPresented: $showingPaywall) {
+                AIPaywallView()
             }
         }
     }
@@ -80,5 +94,67 @@ struct AddPlayerView: View {
         )
         store.addPlayer(player)
         dismiss()
+    }
+}
+
+/// Reusable upsell card for free-tier users. Highlights what Barrel AI
+/// unlocks and pushes the paywall sheet on tap.
+private struct ProUpsell: View {
+    let action: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "sparkles")
+                    .font(.title2)
+                    .foregroundStyle(.tint)
+                Text("Unlock Barrel AI")
+                    .font(.headline)
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                upsellRow(icon: "video.fill.badge.checkmark",
+                          text: "Frame-by-frame swing analysis")
+                upsellRow(icon: "bubble.left.and.bubble.right.fill",
+                          text: "AI coach that answers any hitting question")
+                upsellRow(icon: "chart.bar.doc.horizontal",
+                          text: "Insights — archetype, spray chart, season totals")
+            }
+
+            Button(action: action) {
+                Text("See plans")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .foregroundStyle(.white)
+                    .background(Capsule().fill(.tint))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.tint.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(.tint.opacity(0.25), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    private func upsellRow(icon: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .font(.subheadline)
+                .foregroundStyle(.tint)
+                .frame(width: 22)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+            Spacer()
+        }
     }
 }
