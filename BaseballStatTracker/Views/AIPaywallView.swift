@@ -92,17 +92,28 @@ struct AIPaywallView: View {
     }
 
     private var fineprint: some View {
-        VStack(spacing: 6) {
-            Text("Auto-renews monthly. Cancel anytime in Settings.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+        VStack(spacing: 8) {
+            Text(
+                "Auto-renewable monthly subscription. Payment is charged to your "
+                + "Apple Account at confirmation of purchase. Subscription auto-renews "
+                + "unless cancelled at least 24 hours before the end of the current "
+                + "period. Manage or cancel in Settings → Apple ID → Subscriptions."
+            )
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 4)
+
             HStack(spacing: 16) {
                 Button("Restore Purchases") {
                     Task { await billing.restore() }
                 }
                 .font(.footnote)
-                Link("Terms",
+                Link("Privacy",
+                     destination: URL(string: "https://github.com/divinedavis/Baseball-Stat-Tracker#privacy")!)
+                    .font(.footnote)
+                Link("Terms (EULA)",
                      destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                     .font(.footnote)
             }
