@@ -38,13 +38,17 @@ struct AddPlayerView: View {
                     }
                 }
 
-                if billing.tier == .free {
-                    Section {
-                        ProUpsell { showingPaywall = true }
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
+                Section {
+                    Group {
+                        if billing.tier == .free {
+                            ProUpsell { showingPaywall = true }
+                        } else {
+                            ProFeaturesCard(tier: billing.tier)
+                        }
                     }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
             }
             .navigationTitle("Add Player")
@@ -146,6 +150,81 @@ private struct ProUpsell: View {
     }
 
     private func upsellRow(icon: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .font(.subheadline)
+                .foregroundStyle(.tint)
+                .frame(width: 22)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+            Spacer()
+        }
+    }
+}
+
+/// Reminds paid users what their subscription unlocks. Tier-aware so Pro
+/// users see "unlimited" Q&A and the higher swing cap, Standard users see
+/// their actual numbers.
+private struct ProFeaturesCard: View {
+    let tier: AITier
+
+    private var planLabel: String {
+        switch tier {
+        case .pro:      return "Barrel AI Pro"
+        case .standard: return "Barrel AI Standard"
+        case .free:     return "Free"
+        }
+    }
+
+    private var swingLine: String {
+        "\(tier.monthlySwings) swing analyses / month · \(tier.dailySwings) per day"
+    }
+
+    private var questionLine: String {
+        tier.monthlyQuestions < 0
+            ? "Unlimited AI coach questions"
+            : "\(tier.monthlyQuestions) AI coach questions / month"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "sparkles")
+                    .font(.title2)
+                    .foregroundStyle(.tint)
+                Text("You're on \(planLabel)")
+                    .font(.headline)
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                featureRow(icon: "video.fill.badge.checkmark",
+                           text: swingLine)
+                featureRow(icon: "bubble.left.and.bubble.right.fill",
+                           text: questionLine)
+                featureRow(icon: "chart.bar.doc.horizontal",
+                           text: "Insights — archetype, spray chart, season totals")
+            }
+
+            Text("Open the AI tab any time to chat or upload a swing. Tap Insights from any player's 3-dot menu.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.tint.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(.tint.opacity(0.25), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    private func featureRow(icon: String, text: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
                 .font(.subheadline)
