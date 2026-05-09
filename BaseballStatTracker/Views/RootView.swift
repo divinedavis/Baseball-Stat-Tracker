@@ -26,6 +26,7 @@ struct RootView: View {
                             NavigationLink(value: player.id) {
                                 PlayerCard(player: player)
                             }
+                            .accessibilityIdentifier("playerRow-\(player.name)")
                             .buttonStyle(.plain)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
@@ -59,6 +60,8 @@ struct RootView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityIdentifier("addPlayerButton")
+                    .accessibilityLabel("Add player")
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {

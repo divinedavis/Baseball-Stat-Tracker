@@ -25,6 +25,7 @@ struct AddPlayerView: View {
             Form {
                 Section("Player") {
                     TextField("Name", text: $name)
+                        .accessibilityIdentifier("playerNameField")
                     numericRow(label: "Number", value: $number, range: 0...99)
                     numericRow(label: "Age", value: $age, range: 0...21)
                     Picker("Position", selection: $position) {
@@ -56,10 +57,12 @@ struct AddPlayerView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .accessibilityIdentifier("cancelAddPlayerButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
                         .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .accessibilityIdentifier("saveAddPlayerButton")
                 }
             }
             .sheet(isPresented: $showingPaywall) {

@@ -6,11 +6,17 @@ import Foundation
 @MainActor
 enum DemoSeeder {
     static func seedIfRequested(store: PlayerStore, auth: AuthStore) {
-        let wantsSeed = CommandLine.arguments.contains("-demoSeed")
-        let wantsEmpty = CommandLine.arguments.contains("-demoSeedEmpty")
-        guard wantsSeed || wantsEmpty else { return }
+        let args = CommandLine.arguments
+        let wantsSeed = args.contains("-demoSeed")
+        let wantsEmpty = args.contains("-demoSeedEmpty")
+        let uiTestReset = args.contains("-uiTestReset")
+        let uiTestSignedIn = args.contains("-uiTestSignedIn")
+        guard wantsSeed || wantsEmpty || uiTestReset || uiTestSignedIn else { return }
 
         if !auth.isSignedIn { auth.signInDemo() }
+
+        // UI test flags only handle sign-in unless paired with a seed flag.
+        guard wantsSeed || wantsEmpty else { return }
 
         guard store.players.isEmpty else { return }
 

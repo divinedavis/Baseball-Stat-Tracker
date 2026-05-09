@@ -46,6 +46,13 @@ final class AuthStore: ObservableObject {
            let user = try? JSONDecoder().decode(AuthUser.self, from: data) {
             self.currentUser = user
         }
+        #if DEBUG
+        // During XCUITest runs we never reach Supabase — the live auth
+        // state listener and the startup session refresh would both race
+        // with `signInDemo()` and clear the demo user before the UI ever
+        // settles. Skip both for a deterministic test surface.
+        if UITestSupport.isUITestRun { return }
+        #endif
         observeAuthState()
         Task { await refreshFromSupabase() }
     }

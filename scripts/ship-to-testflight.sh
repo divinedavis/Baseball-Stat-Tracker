@@ -124,6 +124,29 @@ MARKETING=$(awk -F'"' '/MARKETING_VERSION:/ {print $2; exit}' project.yml)
 info "regenerating Xcode project"
 xcodegen generate >/dev/null
 
+# Run the test suite before we touch App Store Connect — failed tests
+# block the ship. Skip with `SKIP_TESTS=1 scripts/ship-to-testflight.sh ...`
+# only when you're shipping a known-broken-tests rescue build.
+if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
+    # Unit tests are fast (~30s) and 100% deterministic — run them on
+    # every ship. UI tests are slow (~3 min) and occasionally flake on a
+    # warm sim, so they default to skipped here. Run them via
+    # `scripts/run_tests.sh --ui-only` (or just `scripts/run_tests.sh`)
+    # before cutting a release build, or set SHIP_RUN_UI=1 to gate every
+    # ship on the full sweep.
+    info "running unit tests (set SKIP_TESTS=1 to bypass)"
+    if [[ "${SHIP_RUN_UI:-0}" == "1" ]]; then
+        info "SHIP_RUN_UI=1 → running unit + UI tests"
+        if ! "$SCRIPT_DIR/run_tests.sh"; then
+            die "tests failed — fix them before shipping"
+        fi
+    else
+        if ! "$SCRIPT_DIR/run_tests.sh" --unit-only; then
+            die "unit tests failed — fix them before shipping"
+        fi
+    fi
+fi
+
 # Strip extended attributes (com.apple.FinderInfo etc.) from sources and project.
 # macOS Finder can silently attach these, which makes codesign refuse the bundle
 # with "resource fork, Finder information, or similar detritus not allowed".

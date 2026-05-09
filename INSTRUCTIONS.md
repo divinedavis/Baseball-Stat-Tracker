@@ -36,6 +36,7 @@ If you accidentally stage something sensitive, **don't just `git reset`** — th
 **Non-negotiable.** After *every* code, asset, script, or doc change:
 
 ```bash
+scripts/run_tests.sh                            # see Rule #1a — tests must pass first
 git add -A
 git commit -m "<concise imperative subject>"
 git push origin main
@@ -49,6 +50,121 @@ If the push fails (repo doesn't exist, no auth, network), **stop and surface it 
 **Ship serialization:** don't start a second ship while a prior one is still uploading or processing — the Apple upload step doesn't parallelize well. Wait for the prior task's completion notification before kicking off the next one.
 
 One meaningful commit per logical change. Don't batch unrelated edits.
+
+---
+
+## ⚑ Rule #1a: TESTS MUST PASS BEFORE EVERY SHIP
+
+**Run the full XCTest + XCUITest sweep after every change.** A red unit
+suite blocks the TestFlight ship — `scripts/ship-to-testflight.sh`
+invokes `scripts/run_tests.sh --unit-only` before it bumps the build
+number. UI tests are slower and environment-flaky (the simulator can
+get stuck after long warm sessions), so they don't gate every ship by
+default — but they're part of every "did I break the app" check.
+
+```bash
+scripts/run_tests.sh                  # unit + UI on iPhone 17 sim, ~3 min
+scripts/run_tests.sh --unit-only      # ~30s, for iteration loops
+scripts/run_tests.sh --ui-only        # XCUITest only
+scripts/run_tests.sh --device "iPhone 17 Pro Max"
+
+# Ship-time gates
+SKIP_TESTS=1 scripts/ship-to-testflight.sh   # rescue ship when tests are
+                                              # known-broken — use sparingly
+SHIP_RUN_UI=1 scripts/ship-to-testflight.sh  # also gate the ship on UI tests
+                                              # (recommended before a release
+                                              # cut; flakier than unit-only)
+```
+
+`run_tests.sh` automatically retries the suite once on a cold-rebooted
+simulator if the first attempt fails — that catches the "stuck sim"
+class of false-positives without masking a real regression, since
+genuine bugs reproduce on a fresh boot.
+
+### What's covered
+
+**Unit (`BaseballStatTrackerTests/`, ~89 tests):**
+
+- `PlayerStatsTests` — AVG / OBP / SLG / OPS math, edge cases (walk-only,
+  HR auto-RBI, stolenBase / RBI / bunt do not count as AB).
+- `AtBatOutcomeTests` — `isHit`, `countsAsAtBat`, label coverage, raw
+  value round-trip; same for `ContactQuality` and `HitLocation`.
+- `AtBatEntryCodableTests` — JSON round-trip, **legacy decoding without
+  `gameNumber` defaults to 1** (the migration invariant).
+- `PlayerCodableTests` — Player encode/decode with optional fields.
+- `PlayerStoreTests` (22 tests, `@MainActor`) — CRUD; cascade delete of
+  at-bats + sessions; `restore` (single + bulk); `updateAtBat` returns
+  previous; `deleteAllData`; `ensureG1Session` / `startNextGame`
+  cap-at-3; `totalGamesLogged` dedup; `playerGames` ordering;
+  `rememberTeam` case-insensitive dedupe + sort + whitespace trim;
+  persistence round-trip via unique `filenamePrefix` so tests never
+  collide on disk.
+- `UndoHistoryTests` — register / undo / redo / clear, fresh register
+  invalidates the redo stack, unlimited stack depth.
+- `KeychainStoreTests` — set/get/update/delete round-trip with
+  per-test unique account; tolerant delete on missing entries.
+- `AppIconSchedulerTests` — night-window correctness across the ET hour
+  boundary (5/6 AM, 7/8 PM).
+- `AppLanguageTests` + `AppearanceModeTests` — toggle, locale, color
+  scheme mapping.
+- `AITierTests` — daily/monthly limits and display names.
+- `AuthValidationTests` — synchronous email/password validation paths
+  that don't hit Supabase (bad email, short password, missing display
+  name, `clearError`).
+- `StatFormatterTests` — leading-dot formatting (`.000`, `1.000`).
+- `PerformanceTests` — `XCTClockMetric` + `XCTMemoryMetric` baselines for
+  10k-entry stat computation, 1k-AB store cold-load, undo stack
+  push/pop throughput.
+
+**UI (`BaseballStatTrackerUITests/`, ~19 tests):**
+
+- `RosterUITests` — empty state copy, seeded roster, tap-into-detail,
+  swipe-to-delete.
+- `AddPlayerUITests` — add flow, save-disabled-when-empty, cancel.
+- `AtBatPadUITests` — slash line responds to `+1B`; counting stats
+  expand + record HR; walk does NOT advance AB; every one of the 12
+  outcome buttons is reachable.
+- `UndoRedoUITests` — undo button enables after AB, undo reverses the
+  AVG, redo replays it.
+- `AppLaunchUITests` — auth screen renders when signed out; `-uiTestReset`
+  signs into empty roster; `-demoSeed` lands on populated roster.
+- `LaunchPerformanceUITests` — `XCTApplicationLaunchMetric` cold-launch
+  time baseline.
+
+### How UI tests stay deterministic
+
+`BaseballStatTracker/UITestSupport.swift` runs in `App.init()` (Debug
+only) and reacts to launch flags:
+
+- `-uiTestReset` — wipes Documents JSON + UserDefaults, pre-stamps the
+  Supabase migration flag so the demo session in Keychain isn't deleted,
+  signs in via `AuthStore.signInDemo()` so we land in MainTabView.
+- `-uiTestSignedOut` — same as `-uiTestReset` but also clears
+  `session.currentUser` from the Keychain so the auth screen renders.
+- `-uiTestSignedIn` — sign in via demo without touching disk.
+
+When any of those flags is present, `UIView.setAnimationsEnabled(false)`
+is called process-wide and `AuthStore.init()` skips Supabase
+`observeAuthState()` + `refreshFromSupabase()` so the demo user
+isn't yanked back to signed-out by the network refresh.
+
+### Accessibility identifiers we rely on
+
+Don't strip these without updating the matching UI test — they're the
+only stable hooks XCUITest has against SwiftUI:
+
+| Surface              | Identifier                       |
+|----------------------|----------------------------------|
+| Roster + button      | `addPlayerButton`                |
+| Roster row           | `playerRow-<player name>`        |
+| Add Player name      | `playerNameField`                |
+| Add Player save      | `saveAddPlayerButton`            |
+| Add Player cancel    | `cancelAddPlayerButton`          |
+| Detail undo / redo   | `undoButton` / `redoButton`      |
+| At-bat outcome btn   | `atBat-<rawValue>`               |
+| Counting stats chevron | `toggleCountingStats`          |
+| Stat cell value      | `statValue-<AVG|OBP|SLG|OPS|H|HR|RBI|AB|2B|3B|BB|K|SB|GO|FO|LO>` |
+| Stat cell label      | `statLabel-<…>`                  |
 
 ---
 
@@ -215,6 +331,8 @@ Save the result as `BaseballStatTracker/Assets.xcassets/AppIcon.appiconset/AppIc
 Baseball-Stat-Tracker/
 ├── BaseballStatTracker/
 │   ├── BaseballStatTrackerApp.swift
+│   ├── UITestSupport.swift          # XCUITest launch-arg hooks (Debug only)
+│   ├── DemoSeeder.swift             # also handles -uiTestReset / -uiTestSignedIn
 │   ├── Models/Player.swift
 │   ├── Stores/PlayerStore.swift
 │   ├── Views/RootView.swift
@@ -222,16 +340,38 @@ Baseball-Stat-Tracker/
 │   ├── Views/PlayerDetailView.swift
 │   ├── Views/AddPlayerView.swift
 │   └── Assets.xcassets/
+├── BaseballStatTrackerTests/        # XCTest target
+│   ├── PlayerStatsTests.swift
+│   ├── PlayerStoreTests.swift
+│   ├── UndoHistoryTests.swift
+│   ├── KeychainStoreTests.swift
+│   ├── AtBatEntryCodableTests.swift
+│   ├── AtBatOutcomeTests.swift
+│   ├── AppIconSchedulerTests.swift
+│   ├── AppLanguageTests.swift
+│   ├── AuthValidationTests.swift
+│   ├── BillingTierTests.swift
+│   ├── StatFormatterTests.swift
+│   └── PerformanceTests.swift
+├── BaseballStatTrackerUITests/      # XCUITest target
+│   ├── BarrelUITestCase.swift       # shared base + helpers
+│   ├── RosterUITests.swift
+│   ├── AddPlayerUITests.swift
+│   ├── AtBatPadUITests.swift
+│   ├── UndoRedoUITests.swift
+│   ├── AppLaunchUITests.swift
+│   └── LaunchPerformanceUITests.swift
 ├── scripts/
-│   ├── ship-to-testflight.sh
+│   ├── run_tests.sh                 # the single entry point for the test sweep
+│   ├── ship-to-testflight.sh        # gates on run_tests.sh before bumping
 │   ├── install-testflight-cron.sh
 │   ├── uninstall-testflight-cron.sh
 │   ├── asc_set_whats_new.py
 │   ├── asc-config.env.example
 │   └── com.divinedavis.baseballstattracker.testflight.plist
-├── project.yml           # xcodegen source of truth
+├── project.yml                      # xcodegen source of truth
 ├── README.md
-└── INSTRUCTIONS.md       # this file
+└── INSTRUCTIONS.md                  # this file
 ```
 
-`BaseballStatTracker.xcodeproj` is generated from `project.yml` — don't edit it by hand. Run `xcodegen generate` after changing the project spec.
+`BaseballStatTracker.xcodeproj` is generated from `project.yml` — don't edit it by hand. Run `xcodegen generate` after changing the project spec (`scripts/run_tests.sh` does this automatically when `project.yml` is newer).

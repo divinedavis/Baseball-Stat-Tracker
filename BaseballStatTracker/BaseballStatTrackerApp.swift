@@ -30,6 +30,12 @@ struct BaseballStatTrackerApp: App {
     @AppStorage("appearance") private var appearanceRaw: String = AppearanceMode.system.rawValue
     @AppStorage("appLanguage") private var languageRaw: String = ""
 
+    init() {
+        #if DEBUG
+        UITestSupport.resetIfRequested()
+        #endif
+    }
+
     private var appearance: AppearanceMode {
         AppearanceMode(rawValue: appearanceRaw) ?? .system
     }

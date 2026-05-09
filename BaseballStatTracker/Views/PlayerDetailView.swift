@@ -113,6 +113,8 @@ struct PlayerDetailView: View {
                     Image(systemName: "arrow.uturn.backward")
                 }
                 .disabled(!history.canUndo)
+                .accessibilityIdentifier("undoButton")
+                .accessibilityLabel("Undo")
 
                 Button {
                     history.redo()
@@ -120,6 +122,8 @@ struct PlayerDetailView: View {
                     Image(systemName: "arrow.uturn.forward")
                 }
                 .disabled(!history.canRedo)
+                .accessibilityIdentifier("redoButton")
+                .accessibilityLabel("Redo")
 
                 Menu {
                     Button {
@@ -283,6 +287,8 @@ struct CollapsibleHeader: View {
                 .textCase(nil)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("toggleCountingStats")
+            .accessibilityLabel(isExpanded ? "Minimize counting stats" : "Expand counting stats")
         }
     }
 }
@@ -341,9 +347,11 @@ struct StatCell: View {
             Text(value)
                 .font(.system(.title3, design: .rounded).monospacedDigit())
                 .fontWeight(.semibold)
+                .accessibilityIdentifier("statValue-\(label)")
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .accessibilityIdentifier("statLabel-\(label)")
         }
         .frame(maxWidth: .infinity)
     }
@@ -422,6 +430,7 @@ struct AtBatPad: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("atBat-\(outcome.rawValue)")
                 }
             }
         }
