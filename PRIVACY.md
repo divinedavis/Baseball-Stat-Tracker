@@ -58,7 +58,7 @@ If you choose Sign in with Apple, Apple handles authentication. Barrel receives 
 
 ## Children's privacy
 
-Barrel is not directed at children under 13 and we do not knowingly collect personal information from children under 13. Anthropic's API terms also require users to be at least 13. If you are a parent or guardian and believe your child under 13 has provided us with information, contact us and we will delete it.
+Barrel is not directed at children under 13 and we do not knowingly collect personal information from children under 13. Anthropic's API terms also require users to be at least 13. The App Store age rating for Barrel is 13+. If you are a parent or guardian and believe your child under 13 has provided us with information, contact us and we will delete it.
 
 ## Your rights and how to delete your data
 
