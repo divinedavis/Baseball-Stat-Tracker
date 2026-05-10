@@ -8,8 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		02FCF7C64DA1DAE1A0526223 /* AIPaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9FAAD978BF107AF775D782 /* AIPaywallView.swift */; };
+		07AFCF84C7D8CA5BF461670D /* EventLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57EDABC5151922712DFDE5A5 /* EventLogger.swift */; };
 		081C3D1BBC12A47E0E58B24E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6718C8BD1653FA60117CEDDC /* Assets.xcassets */; };
 		0AFBF722D9722253FB96E060 /* PlayerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92130A98036FFC4BE4F520A /* PlayerDetailView.swift */; };
+		151C87DC6C86F1731C16D5A3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = ED9EC953E843613D6BB2FD13 /* PrivacyInfo.xcprivacy */; };
 		17BB64A2C04DC2FAD0744A16 /* ReviewPrompter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */; };
 		2F41D31EAFE3EC969C526F72 /* AppLaunchUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02EF0733F35FE06FCD059302 /* AppLaunchUITests.swift */; };
 		3226AE0D999626195A8B1B54 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */; };
@@ -99,6 +101,7 @@
 		4E120E114E595B20E0B7ADD8 /* AddPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPlayerView.swift; sourceTree = "<group>"; };
 		4F76BE491231DFE216ECCE7F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5326ADF3D1E7819A3C1EB36C /* AIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIClient.swift; sourceTree = "<group>"; };
+		57EDABC5151922712DFDE5A5 /* EventLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLogger.swift; sourceTree = "<group>"; };
 		5E30F52957D74423F14540E8 /* BaseballStatTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BaseballStatTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6718C8BD1653FA60117CEDDC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		69466E8C62BE9488DA3FEAE0 /* AtBatEntryCodableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtBatEntryCodableTests.swift; sourceTree = "<group>"; };
@@ -132,6 +135,7 @@
 		E39437343090B7B311914B1E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		E4AEB6AC072119320379DA34 /* PlayerStatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerStatsTests.swift; sourceTree = "<group>"; };
 		E976E02BA6DDF5EB4A3873F2 /* KeychainStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
+		ED9EC953E843613D6BB2FD13 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FA8AC5AC814407550C991F2E /* AppLanguageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguageTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -201,6 +205,7 @@
 			isa = PBXGroup;
 			children = (
 				5326ADF3D1E7819A3C1EB36C /* AIClient.swift */,
+				57EDABC5151922712DFDE5A5 /* EventLogger.swift */,
 				A6C80A685D2D29D9F427DC23 /* SupabaseClient.swift */,
 			);
 			path = Backend;
@@ -250,6 +255,7 @@
 				A279353CA9D3695C76B99C59 /* DemoSeeder.swift */,
 				4F76BE491231DFE216ECCE7F /* Info.plist */,
 				B2D2094FEEA0636F998A5A6E /* Localizable.xcstrings */,
+				ED9EC953E843613D6BB2FD13 /* PrivacyInfo.xcprivacy */,
 				4857F1C3DD661056BA7AC594 /* ReviewPrompter.swift */,
 				74CDBF5813212BA5EFB49006 /* UITestSupport.swift */,
 				7D6BE2BC0BD1A09D9AA5AA00 /* Backend */,
@@ -394,6 +400,7 @@
 				8163C8FACCAF59E93F310A85 /* BarrelNight@2x.png in Resources */,
 				3E92080B40368AC54F1D7667 /* BarrelNight@3x.png in Resources */,
 				3226AE0D999626195A8B1B54 /* Localizable.xcstrings in Resources */,
+				151C87DC6C86F1731C16D5A3 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -417,6 +424,7 @@
 				4F9868B61706659144C74FFD /* BaseballStatTrackerApp.swift in Sources */,
 				6C70EEDD6D27EB02CD80B0E3 /* BillingStore.swift in Sources */,
 				5F7715FEE34926B585A66338 /* DemoSeeder.swift in Sources */,
+				07AFCF84C7D8CA5BF461670D /* EventLogger.swift in Sources */,
 				69118326CC18DE6929D0DCDF /* KeychainStore.swift in Sources */,
 				61CA2F222EE946B41A54E446 /* MainTabView.swift in Sources */,
 				D73887A94E1D6B07F635EE38 /* Player.swift in Sources */,
@@ -489,7 +497,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BaseballStatTracker/BaseballStatTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 72;
+				CURRENT_PROJECT_VERSION = 73;
 				INFOPLIST_FILE = BaseballStatTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -663,7 +671,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BaseballStatTracker/BaseballStatTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 72;
+				CURRENT_PROJECT_VERSION = 73;
 				INFOPLIST_FILE = BaseballStatTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

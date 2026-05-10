@@ -294,14 +294,44 @@ final class AuthStore: ObservableObject {
         }
     }
 
-    /// Apple 5.1.1(v) compliance. Calls `auth.admin.deleteUser` indirectly via
-    /// a server-side delete-user RPC if you add one later; for now we sign
-    /// out and clear local data. The Supabase user row remains until you
-    /// remove it via the dashboard or a privileged edge function.
+    /// Apple 5.1.1(v) compliance. Calls the `delete-user` edge function which
+    /// removes the user's storage objects under swing-media/<userId>/ and
+    /// then `auth.admin.deleteUser` — cascading FKs clean up subscriptions,
+    /// usage_counters, daily_usage, swing_analyses, chat_messages, and
+    /// app_events. After the server-side delete returns we sign out and
+    /// clear any local cache.
+    ///
+    /// If the server call fails we still sign the user out locally and
+    /// surface the error so they know retry-from-our-end is needed.
     func deleteAccount() {
         Task {
+            isLoading = true
+            defer { isLoading = false }
+            do {
+                try await callDeleteUserFunction()
+            } catch {
+                lastError = "Couldn't fully delete your account. Please email support so we can finish removing your data."
+            }
             try? await SupabaseService.client.auth.signOut()
             await MainActor.run { self.clearLocalSession() }
+        }
+    }
+
+    private func callDeleteUserFunction() async throws {
+        guard let session = try? await SupabaseService.client.auth.session else {
+            throw URLError(.userAuthenticationRequired)
+        }
+        var req = URLRequest(url: SupabaseConfig.url
+            .appendingPathComponent("functions/v1/delete-user"))
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        req.setValue(SupabaseConfig.publishableKey, forHTTPHeaderField: "apikey")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.timeoutInterval = 30
+
+        let (_, response) = try await URLSession.shared.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
         }
     }
 

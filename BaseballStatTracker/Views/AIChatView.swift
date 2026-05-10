@@ -184,6 +184,17 @@ struct AIChatView: View {
         let attachmentSnapshot = attachment
         attachment = nil
 
+        if attachmentSnapshot != nil {
+            EventLogger.shared.log("swing_analyze_started", properties: [
+                "media_kind": .string(attachmentSnapshot?.kind == .video ? "video" : "photo"),
+                "has_note": .bool(!trimmed.isEmpty),
+            ])
+        } else {
+            EventLogger.shared.log("chat_sent", properties: [
+                "char_count": .integer(trimmed.count),
+            ])
+        }
+
         Task {
             do {
                 if let attachmentSnapshot {
@@ -198,12 +209,22 @@ struct AIChatView: View {
                         note: trimmed.isEmpty ? nil : trimmed
                     )
                     messages.append(ChatItem(role: .assistant, text: result.feedback, kind: nil))
+                    EventLogger.shared.log("swing_analyze_completed", properties: [
+                        "tier": .string(result.tier),
+                    ])
                 } else {
                     let result = try await AIClient.shared.chat(message: trimmed)
                     messages.append(ChatItem(role: .assistant, text: result.reply, kind: nil))
+                    EventLogger.shared.log("chat_completed", properties: [
+                        "tier": .string(result.tier),
+                    ])
                 }
             } catch {
                 self.error = error.localizedDescription
+                EventLogger.shared.log("ai_request_failed", properties: [
+                    "kind": .string(attachmentSnapshot != nil ? "swing" : "chat"),
+                    "message": .string(error.localizedDescription),
+                ])
             }
             sending = false
         }

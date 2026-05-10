@@ -61,11 +61,13 @@ struct BaseballStatTrackerApp: App {
                         await billing.loadProducts()
                         await billing.refreshEntitlements()
                     }
+                    EventLogger.shared.log("app_open", properties: ["trigger": .string("launch")])
                 }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
                         AppIconScheduler.applyIfNeeded()
                         Task { await billing.refreshEntitlements() }
+                        EventLogger.shared.log("app_open", properties: ["trigger": .string("foreground")])
                     }
                 }
         }

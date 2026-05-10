@@ -30,6 +30,9 @@ struct AIPaywallView: View {
         .task {
             await billing.loadProducts()
             await billing.refreshEntitlements()
+            EventLogger.shared.log("paywall_shown", properties: [
+                "current_tier": .string(billing.tier.rawValue),
+            ])
         }
     }
 
@@ -178,9 +181,17 @@ struct AIPaywallView: View {
     private func handlePurchase() {
         guard let product = selectedProduct,
               let userId = auth.supabaseUserId else { return }
+        EventLogger.shared.log("subscribe_tapped", properties: [
+            "product_id": .string(product.id),
+            "price": .string(product.displayPrice),
+        ])
         Task {
             await billing.purchase(product, supabaseUserId: userId)
             if billing.tier != .free {
+                EventLogger.shared.log("subscribe_completed", properties: [
+                    "product_id": .string(product.id),
+                    "tier": .string(billing.tier.rawValue),
+                ])
                 dismiss()
             }
         }
