@@ -2,7 +2,7 @@ import StoreKit
 import UIKit
 
 enum ReviewPrompter {
-    static let gameThreshold = 3
+    static let gameThreshold = 1
     private static let promptedKey = "bst.hasRequestedReview"
 
     /// Apple throttles `requestReview` to ~3 prompts/365 days regardless of how
