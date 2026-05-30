@@ -1,17 +1,27 @@
 // POST /functions/v1/storekit-webhook
 // App Store Server Notifications V2 receiver.
 //
-// Apple posts a `signedPayload` (JWS). We decode the payload + nested
-// signedTransactionInfo to update the `subscriptions` row for the user.
+// Apple posts a `signedPayload` (JWS). We CRYPTOGRAPHICALLY VERIFY that JWS and
+// the nested `signedTransactionInfo` / `signedRenewalInfo` JWS against Apple's
+// pinned Root CA - G3 before trusting any field, then update the `subscriptions`
+// row for the user.
 //
-// User identity comes from Apple's `appAccountToken`, which the iOS client
-// sets at purchase time to the Supabase auth user id. If that field is
-// missing on a notification we fall back to looking up by
-// `original_transaction_id`.
+// User identity comes from Apple's `appAccountToken`, which the iOS client sets
+// at purchase time to the Supabase auth user id. If that field is missing we
+// fall back to looking up by the verified `original_transaction_id`.
+//
+// SECURITY: the payload is unauthenticated transport — anyone can POST here
+// (verify_jwt=false, as a webhook must be). The ONLY thing that makes a write
+// trustworthy is the Apple JWS signature, so we reject (400) any payload whose
+// signature/cert-chain does not verify against the pinned Apple root, and we
+// reject (400) any payload whose verified bundleId is not ours.
 
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { corsHeaders } from "../_shared/cors.ts";
+import { verifyAppleJWS, JWSVerificationError } from "./appleJWS.ts";
+
+const EXPECTED_BUNDLE_ID = "com.divinedavis.BaseballStatTracker";
 
 const PRODUCT_TIER: Record<string, "standard" | "pro"> = {
   "com.divinedavis.BaseballStatTracker.aistandard.monthly": "standard",
@@ -27,12 +37,47 @@ Deno.serve(async (req) => {
     return new Response("missing signedPayload", { status: 400 });
   }
 
-  const payload = decodeJWSPayload<NotificationPayload>(body.signedPayload);
+  // 1) Verify the outer notification JWS against Apple's pinned root.
+  let payload: NotificationPayload;
+  try {
+    payload = await verifyAppleJWS<NotificationPayload>(body.signedPayload);
+  } catch (e) {
+    if (e instanceof JWSVerificationError) {
+      console.warn("storekit-webhook: rejected unverified signedPayload:", e.message);
+      return new Response("invalid signature", { status: 400 });
+    }
+    throw e;
+  }
+
   if (!payload?.data?.signedTransactionInfo) {
     return new Response("malformed payload", { status: 400 });
   }
-  const tx = decodeJWSPayload<TransactionInfo>(payload.data.signedTransactionInfo);
-  if (!tx) return new Response("malformed transaction", { status: 400 });
+
+  // 2) Verify the nested signedTransactionInfo JWS the same way before reading
+  //    any transaction field. (signedRenewalInfo, when present, is verified too
+  //    so a forged renewal block cannot slip through.)
+  let tx: TransactionInfo;
+  try {
+    tx = await verifyAppleJWS<TransactionInfo>(payload.data.signedTransactionInfo);
+    if (payload.data.signedRenewalInfo) {
+      await verifyAppleJWS<unknown>(payload.data.signedRenewalInfo);
+    }
+  } catch (e) {
+    if (e instanceof JWSVerificationError) {
+      console.warn("storekit-webhook: rejected unverified transaction info:", e.message);
+      return new Response("invalid signature", { status: 400 });
+    }
+    throw e;
+  }
+
+  // 3) Only trust fields that came out of a verified JWS. Pin the bundleId so a
+  //    validly-Apple-signed notification for some *other* app can't touch our
+  //    subscriptions table.
+  const bundleId = tx.bundleId ?? payload.data.bundleId;
+  if (bundleId !== EXPECTED_BUNDLE_ID) {
+    console.warn("storekit-webhook: bundleId mismatch:", bundleId);
+    return new Response("bundle mismatch", { status: 400 });
+  }
 
   const productId = tx.productId;
   const tier = PRODUCT_TIER[productId];
@@ -59,16 +104,20 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
 
+  // 4) Resolve identity. Prefer mapping the *verified* originalTransactionId to
+  //    a known subscription row; only trust appAccountToken when we have no
+  //    existing mapping for this original transaction.
   let userId: string | null = null;
-  if (tx.appAccountToken) {
-    userId = tx.appAccountToken;
-  } else if (tx.originalTransactionId) {
+  if (tx.originalTransactionId) {
     const { data } = await sb
       .from("subscriptions")
       .select("user_id")
       .eq("original_transaction_id", tx.originalTransactionId)
       .maybeSingle();
     userId = data?.user_id ?? null;
+  }
+  if (!userId && tx.appAccountToken) {
+    userId = tx.appAccountToken;
   }
 
   if (!userId) {
@@ -105,23 +154,10 @@ type NotificationPayload = {
 };
 
 type TransactionInfo = {
+  bundleId?: string;
   productId: string;
   originalTransactionId: string;
   appAccountToken?: string;
   expiresDate?: number;
   environment?: string;
 };
-
-function decodeJWSPayload<T>(jws: string): T | null {
-  const parts = jws.split(".");
-  if (parts.length !== 3) return null;
-  try {
-    const json = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(json) as T;
-  } catch {
-    return null;
-  }
-}
-
-// TODO before production: verify the JWS signature using Apple's public root
-// certs per https://developer.apple.com/documentation/appstoreservernotifications/responsebodyv2
