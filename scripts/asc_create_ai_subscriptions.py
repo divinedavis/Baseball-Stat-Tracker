@@ -47,6 +47,9 @@ GROUP_REF_NAME = "Barrel AI"
 GROUP_DISPLAY_NAME = "Barrel AI"
 LOCALE = "en-US"
 
+# Version states that still accept metadata edits (ASC API 4.4.1, July 2026).
+EDITABLE_STATES = {"PREPARE_FOR_SUBMISSION", "REJECTED", "DEVELOPER_REJECTED"}
+
 PRODUCTS = [
     {
         "ref_name": "Barrel AI Standard Monthly",
@@ -161,19 +164,49 @@ def find_or_create_group(app_id: str, token: str, dry: bool) -> str:
     return gid
 
 
+def sorted_versions(list_path: str, token: str, what: str) -> list:
+    status, d = api("GET", f"{list_path}?limit=50", token)
+    must(status, d, what)
+    return sorted(d.get("data", []),
+                  key=lambda v: v["attributes"].get("version") or 0, reverse=True)
+
+
+def version_has_locale(loc_path: str, token: str, what: str) -> bool:
+    status, d = api("GET", f"{loc_path}?limit=200", token)
+    must(status, d, what)
+    return any(l["attributes"].get("locale") == LOCALE for l in d.get("data", []))
+
+
+def editable_or_new_version(versions: list, version_type: str, parent_key: str,
+                            parent_type: str, parent_id: str, token: str) -> str:
+    draft = next((v for v in versions if v["attributes"].get("state") in EDITABLE_STATES), None)
+    if draft:
+        return draft["id"]
+    body = {
+        "data": {
+            "type": version_type,
+            "relationships": {
+                parent_key: {"data": {"type": parent_type, "id": parent_id}}
+            },
+        }
+    }
+    status, d = api("POST", f"/v1/{version_type}", token, body)
+    must(status, d, f"create draft {version_type}")
+    return d["data"]["id"]
+
+
 def ensure_group_localization(group_id: str, token: str, dry: bool):
-    status, d = api(
-        "GET",
-        f"/v1/subscriptionGroups/{group_id}/subscriptionGroupLocalizations",
-        token,
-    )
-    must(status, d, "list group localizations")
-    for loc in d.get("data", []):
-        if loc["attributes"].get("locale") == LOCALE:
+    versions = sorted_versions(f"/v1/subscriptionGroups/{group_id}/versions",
+                               token, "list group versions")
+    for v in versions:
+        if version_has_locale(f"/v1/subscriptionGroupVersions/{v['id']}/localizations",
+                              token, "list group localizations"):
             return
     if dry:
         print(f"  [dry] would add {LOCALE} localization to group {group_id}")
         return
+    vid = editable_or_new_version(versions, "subscriptionGroupVersions",
+                                  "subscriptionGroup", "subscriptionGroups", group_id, token)
     body = {
         "data": {
             "type": "subscriptionGroupLocalizations",
@@ -183,13 +216,13 @@ def ensure_group_localization(group_id: str, token: str, dry: bool):
                 "customAppName": None,
             },
             "relationships": {
-                "subscriptionGroup": {
-                    "data": {"type": "subscriptionGroups", "id": group_id}
+                "version": {
+                    "data": {"type": "subscriptionGroupVersions", "id": vid}
                 }
             },
         }
     }
-    status, d = api("POST", "/v1/subscriptionGroupLocalizations", token, body)
+    status, d = api("POST", "/v2/subscriptionGroupLocalizations", token, body)
     must(status, d, "create group localization")
     print(f"  + added {LOCALE} localization to group")
 
@@ -237,19 +270,18 @@ def create_subscription(group_id: str, token: str, spec: dict, dry: bool) -> str
 
 
 def ensure_localization(sub_id: str, token: str, spec: dict, dry: bool):
-    status, d = api(
-        "GET",
-        f"/v1/subscriptions/{sub_id}/subscriptionLocalizations",
-        token,
-    )
-    must(status, d, f"list localizations for {sub_id}")
-    for loc in d.get("data", []):
-        if loc["attributes"].get("locale") == LOCALE:
+    versions = sorted_versions(f"/v1/subscriptions/{sub_id}/versions",
+                               token, f"list versions for {sub_id}")
+    for v in versions:
+        if version_has_locale(f"/v1/subscriptionVersions/{v['id']}/localizations",
+                              token, f"list localizations for {sub_id}"):
             print(f"    ✓ {LOCALE} localization exists")
             return
     if dry:
         print(f"    [dry] would add {LOCALE} localization to {sub_id}")
         return
+    vid = editable_or_new_version(versions, "subscriptionVersions",
+                                  "subscription", "subscriptions", sub_id, token)
     body = {
         "data": {
             "type": "subscriptionLocalizations",
@@ -259,11 +291,11 @@ def ensure_localization(sub_id: str, token: str, spec: dict, dry: bool):
                 "locale": LOCALE,
             },
             "relationships": {
-                "subscription": {"data": {"type": "subscriptions", "id": sub_id}}
+                "version": {"data": {"type": "subscriptionVersions", "id": vid}}
             },
         }
     }
-    status, d = api("POST", "/v1/subscriptionLocalizations", token, body)
+    status, d = api("POST", "/v2/subscriptionLocalizations", token, body)
     must(status, d, f"create localization for {sub_id}")
     print(f"    + added {LOCALE} localization")
 

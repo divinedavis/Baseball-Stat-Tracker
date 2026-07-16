@@ -88,29 +88,40 @@ def main():
         print(f"SUBSCRIPTION: {name}")
         print("=" * 70)
 
-        s, d = api("GET", f"/v1/subscriptions/{sid}?include=appStoreReviewScreenshot,subscriptionLocalizations,prices", token)
+        s, d = api("GET", f"/v1/subscriptions/{sid}?include=prices", token)
         if s != 200:
             print(f"  error {s}: {d}")
             continue
         attrs = d["data"]["attributes"]
-        rels = d["data"].get("relationships", {})
         print(f"  productId: {attrs.get('productId')}")
         print(f"  state: {attrs.get('state')}")
         print(f"  reviewNote: {attrs.get('reviewNote', '')[:80]}")
         print(f"  groupLevel: {attrs.get('groupLevel')}")
 
-        # Review screenshot
-        screenshot_rel = rels.get("appStoreReviewScreenshot", {}).get("data")
-        if screenshot_rel:
-            print(f"  ✓ review screenshot attached: {screenshot_rel}")
-        else:
-            print(f"  ✗ NO review screenshot")
+        # Metadata + review images live on subscription versions (ASC API 4.4.1, July 2026).
+        s, dv = api("GET", f"/v1/subscriptions/{sid}/versions?limit=50", token)
+        if s != 200:
+            print(f"  error listing versions {s}: {dv}")
+            continue
+        versions = sorted(dv.get("data") or [],
+                          key=lambda v: v["attributes"].get("version") or 0, reverse=True)
+        if not versions:
+            print("  ✗ NO versions (no metadata drafted)")
+        for v in versions:
+            va = v["attributes"]
+            print(f"  version {va.get('version')}: state={va.get('state')} id={v['id']}")
 
-        # Localizations summary
-        for inc in d.get("included", []):
-            if inc["type"] == "subscriptionLocalizations":
-                a = inc["attributes"]
-                print(f"  localization {a['locale']}: name='{a.get('name')}' desc='{a.get('description', '')[:60]}'")
+            s2, dl = api("GET", f"/v1/subscriptionVersions/{v['id']}/localizations?limit=200", token)
+            for loc in (dl.get("data") or []) if s2 == 200 else []:
+                a = loc["attributes"]
+                print(f"    localization {a['locale']}: name='{a.get('name')}' desc='{a.get('description', '')[:60]}'")
+
+            s3, di = api("GET", f"/v1/subscriptionVersions/{v['id']}/images?limit=50", token)
+            imgs = (di.get("data") or []) if s3 == 200 else []
+            if imgs:
+                print(f"    ✓ review image(s) attached: {len(imgs)}")
+            else:
+                print(f"    ✗ NO review images")
 
 
 if __name__ == "__main__":
