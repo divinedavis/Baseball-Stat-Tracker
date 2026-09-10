@@ -1,0 +1,14 @@
+{
+  "name": "Barrel Baseball",
+  "icon": "/Users/divinedavis/projects/Baseball-Stat-Tracker/BaseballStatTracker/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+  "raw_dir": "/Users/divinedavis/projects/Baseball-Stat-Tracker/docs/marketing/raw",
+  "out_dir": "/Users/divinedavis/projects/Baseball-Stat-Tracker/docs/marketing/pinterest",
+  "masonry": ["01_roster.png", "02_detail_top.png", "03_expanded_stats.png", "04_game_log.png"],
+  "panels": [
+    ["01_roster.png", "Your whole roster"],
+    ["02_detail_top.png", "Log every at-bat"],
+    ["03_expanded_stats.png", "Stats that add up"],
+    ["04_game_log.png", "Watch them grow"]
+  ],
+  "stickers": ["⚾", "🧢", "🏆", "🔥"]
+}
