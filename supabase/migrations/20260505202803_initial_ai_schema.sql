@@ -182,3 +182,25 @@ revoke all on function public.check_quota(uuid, text) from public;
 revoke all on function public.increment_usage(uuid, text) from public;
 grant execute on function public.check_quota(uuid, text) to service_role;
 grant execute on function public.increment_usage(uuid, text) to service_role;
+
+-- Explicit Data API grants (Supabase stops auto-granting new public tables
+-- on 2026-10-30). Mirrors the grants live in production, so a rebuild from
+-- these migrations exposes exactly what prod exposes. RLS still gates rows.
+grant select on public.subscriptions to anon;
+grant select, insert, update, delete on public.subscriptions to authenticated;
+grant select, insert, update, delete on public.subscriptions to service_role;
+grant select on public.usage_counters to anon;
+grant select, insert, update, delete on public.usage_counters to authenticated;
+grant select, insert, update, delete on public.usage_counters to service_role;
+grant select on public.daily_usage to anon;
+grant select, insert, update, delete on public.daily_usage to authenticated;
+grant select, insert, update, delete on public.daily_usage to service_role;
+grant select on public.swing_analyses to anon;
+grant select, insert, update, delete on public.swing_analyses to authenticated;
+grant select, insert, update, delete on public.swing_analyses to service_role;
+grant select on public.chat_messages to anon;
+grant select, insert, update, delete on public.chat_messages to authenticated;
+grant select, insert, update, delete on public.chat_messages to service_role;
+grant select on public.tier_limits to anon;
+grant select, insert, update, delete on public.tier_limits to authenticated;
+grant select, insert, update, delete on public.tier_limits to service_role;

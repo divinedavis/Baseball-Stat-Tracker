@@ -27,3 +27,10 @@ create policy "events_owner_insert"
 create policy "events_owner_read"
   on public.app_events for select
   using (auth.uid() = user_id);
+
+-- Explicit Data API grants (Supabase stops auto-granting new public tables
+-- on 2026-10-30). Mirrors the grants live in production, so a rebuild from
+-- these migrations exposes exactly what prod exposes. RLS still gates rows.
+grant select on public.app_events to anon;
+grant select, insert, update, delete on public.app_events to authenticated;
+grant select, insert, update, delete on public.app_events to service_role;
