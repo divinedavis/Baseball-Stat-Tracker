@@ -5,7 +5,8 @@
 // authenticated user's session, then calls this function with the storage path.
 // We download the media via the service-role client, call Claude vision, write
 // the analysis to `swing_analyses`, increment quota counters, and return the
-// feedback.
+// feedback. Quota is reserved atomically before the Claude call and refunded
+// if the download or the Claude call fails.
 
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { requireUser, jsonError } from "../_shared/auth.ts";
@@ -30,6 +31,9 @@ Stay specific to what is visible in the media. If the media is unclear (motion-b
 const MODEL = "claude-sonnet-4-6";
 const MAX_VIDEO_FRAMES = 8; // sample at most 8 frames from a video clip
 const MAX_TOKENS = 1024;
+const MAX_NOTE_CHARS = 500;
+// Anthropic rejects images over 5 MB; refuse before paying for the call.
+const MAX_MEDIA_BYTES = 5 * 1024 * 1024;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -51,12 +55,20 @@ Deno.serve(async (req) => {
   }
 
   const { storage_path, media_kind, note } = payload;
-  if (!storage_path || !media_kind) return jsonError(400, "storage_path and media_kind required");
+  if (typeof storage_path !== "string" || typeof media_kind !== "string") {
+    return jsonError(400, "storage_path and media_kind required");
+  }
+  if (note != null && (typeof note !== "string" || note.length > MAX_NOTE_CHARS)) {
+    return jsonError(413, "note too long", { max_chars: MAX_NOTE_CHARS });
+  }
   if (!["photo", "video"].includes(media_kind)) return jsonError(400, "media_kind must be photo|video");
-  if (!storage_path.startsWith(`${userId}/`)) return jsonError(403, "path does not belong to user");
+  if (!storage_path.startsWith(`${userId}/`) || storage_path.includes("..")) {
+    return jsonError(403, "path does not belong to user");
+  }
 
-  // Quota check before doing any expensive work.
-  const { data: quota, error: quotaErr } = await service.rpc("check_quota", {
+  // Reserve one swing atomically (check + increment in one locked
+  // transaction) before any expensive work; refunded on failure below.
+  const { data: quota, error: quotaErr } = await service.rpc("reserve_quota", {
     p_user: userId,
     p_kind: "swing",
   });
@@ -75,11 +87,20 @@ Deno.serve(async (req) => {
     );
   }
 
+  const refund = () => service.rpc("release_quota", { p_user: userId, p_kind: "swing" });
+
   // Download the media from storage.
   const { data: file, error: dlErr } = await service.storage
     .from("swing-media")
     .download(storage_path);
-  if (dlErr || !file) return jsonError(404, "media not found");
+  if (dlErr || !file) {
+    await refund();
+    return jsonError(404, "media not found");
+  }
+  if (file.size > MAX_MEDIA_BYTES) {
+    await refund();
+    return jsonError(413, "media too large", { max_bytes: MAX_MEDIA_BYTES });
+  }
 
   const mimeType = file.type || (media_kind === "video" ? "video/mp4" : "image/jpeg");
 
@@ -122,17 +143,24 @@ Deno.serve(async (req) => {
     ? `Player note: ${note.trim()}\n\nAnalyze the swing.`
     : "Analyze the swing.";
 
-  const claude = await callClaude({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    system: systemBlocks,
-    messages: [
-      {
-        role: "user",
-        content: [...imageBlocks, { type: "text", text: userText }],
-      },
-    ],
-  });
+  let claude;
+  try {
+    claude = await callClaude({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: systemBlocks,
+      messages: [
+        {
+          role: "user",
+          content: [...imageBlocks, { type: "text", text: userText }],
+        },
+      ],
+    });
+  } catch (e) {
+    console.error("ai-analyze-swing claude call failed", e instanceof Error ? e.message : e);
+    await refund();
+    return jsonError(502, "ai_unavailable");
+  }
 
   const feedback = claude.content
     .filter((c) => c.type === "text")
@@ -155,8 +183,6 @@ Deno.serve(async (req) => {
     .single();
 
   if (insertErr) return jsonError(500, "failed to save analysis", { detail: insertErr.message });
-
-  await service.rpc("increment_usage", { p_user: userId, p_kind: "swing" });
 
   return new Response(
     JSON.stringify({
