@@ -1,6 +1,6 @@
 # BARREL — Privacy Policy
 
-_Last updated: 2026-05-10_
+_Last updated: September 27, 2026_
 
 BARREL ("Barrel," "we," "us") is an iOS app for coaches, parents, and players to track at-bat outcomes and get AI feedback on swings. This policy explains what we collect, why, where it goes, and how to delete it.
 
@@ -19,7 +19,8 @@ BARREL ("Barrel," "we," "us") is an iOS app for coaches, parents, and players to
 | Password (hashed) | Email signup only | Supabase Auth (bcrypt) | Sign-in; the plaintext is never stored |
 | Apple user identifier | Sign in with Apple | Supabase Auth + iOS Keychain | Sign-in |
 | Display name | Account creation | Supabase Auth metadata + iOS Keychain | Greeting in the UI |
-| Swing photo or video you submit for analysis | When you tap "Analyze swing" | Supabase Storage (private bucket, path scoped to your user ID) | Sent to the Claude API to generate feedback |
+| Swing photo or video you submit for analysis (this usually shows the player, who may be a child) | When you tap "Analyze swing" | Supabase Storage (private bucket, path scoped to your user ID); kept until you delete your account | Sent to Anthropic's Claude API to generate feedback |
+| Optional note you type with a swing | When you tap "Analyze swing" | Sent with the swing to Anthropic; the feedback is saved in `swing_analyses` | Context for the feedback |
 | AI feedback text | Generated when you analyze a swing or chat | Supabase database (`swing_analyses`, `chat_messages`) | Show feedback in the app and in your history |
 | Your AI chat messages | When you send a chat | Supabase database (`chat_messages`) | Conversation history |
 | Subscription tier and Apple transaction ID | When you purchase or restore a subscription | Supabase database (`subscriptions`) | Enforce quota and entitlements |
@@ -58,7 +59,50 @@ If you choose Sign in with Apple, Apple handles authentication. Barrel receives 
 
 ## Children's privacy
 
-Barrel is not directed at children under 13 and we do not knowingly collect personal information from children under 13. Anthropic's API terms also require users to be at least 13. The App Store age rating for Barrel is 13+. If you are a parent or guardian and believe your child under 13 has provided us with information, contact us and we will delete it.
+Barrel is marketed to coaches and parents of youth teams, including 9–12-year-old
+teams, so much of the information in the app is **about children**. The app is
+meant to be used by adults: the account holder should be a coach, parent or
+guardian (or a player aged 13 or older). We do not knowingly let children under
+13 create their own accounts; if we learn one has, we will delete it.
+
+**What is collected about players, and by whom.** All of it is entered by the
+coach or parent who holds the account:
+
+- **Roster and stats — on the device only.** Player name, jersey number,
+  position, age, team, level, batting side, at-bat results and game sessions
+  are saved in the app's local storage on that iPhone (and in its iCloud
+  backup, if enabled). Barrel does not upload them to our servers or send them
+  to Anthropic.
+- **Swing photos and videos — uploaded.** When the account holder taps
+  "Analyze swing", the photo or video (which usually shows the player's body
+  and may show their face) is uploaded to our Supabase storage, and the image
+  (or a frame from the video) is sent to **Anthropic** to generate coaching
+  feedback. The media stays in Supabase storage until the account is deleted.
+  Any note typed with the swing, the AI feedback, and AI chat messages are
+  stored in our Supabase database. Please don't type a child's full name or
+  other identifying details into notes or chat — the AI does not need them.
+- We do not collect a player's contact details, location, school or photos
+  outside of the swings you choose to analyze, and nothing about a player is
+  used for advertising, sold, or used to train AI models (Anthropic does not
+  train on API content under our agreement).
+
+**Parental rights.** A parent or guardian can at any time:
+
+- **Review** what is stored — roster and stats are visible in the app; for
+  swing media, AI feedback and chat, email us and we will send a copy of
+  everything held on our servers for the account within 30 days.
+- **Delete** it — in the app, tap the profile icon (top right) → **Delete
+  Account**. This removes the swing photos and videos from storage, deletes the
+  analyses, chat, subscription and usage records, and wipes the roster and
+  at-bat data on the device. A single player's roster entry and stats can be
+  deleted from the roster list.
+- **Refuse further collection** — stop using "Analyze swing" and AI chat; the
+  stat tracker works without uploading anything.
+- If a coach's account holds swing media of your child and you want it removed,
+  email us with the team and approximate dates and we will work with the
+  account holder to delete it within 30 days.
+
+Contact for any request about a child's information: **divinejdavis@gmail.com**.
 
 ## Your rights and how to delete your data
 
