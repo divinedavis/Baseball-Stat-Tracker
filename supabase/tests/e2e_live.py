@@ -73,7 +73,7 @@ try:
         return http("POST", f"{BASE}/storage/v1/object/swing-media/{uid}/{name}",
                     dict(h or user, **{"Content-Type": "image/jpeg"}), raw=b"\xff" * size), f"{uid}/{name}"
 
-    TESTS = sys.argv[1:] or ["m3", "l1", "l2", "l4"]
+    TESTS = sys.argv[1:] or ["m3", "l1", "l3", "l4"]
 
     # ---- M3: 5 MB bucket limit + 20 objects per user ------------------------
     if "m3" in TESTS:
@@ -108,6 +108,19 @@ try:
         check("l1: nothing older than 30 days in swing-media", expired == 0, expired)
         jobs = sql("select jobname from cron.job where jobname = 'swing-media-sweep' and active")
         check("l1: daily sweep cron scheduled", len(jobs) == 1, jobs)
+
+    # ---- L4: anon can't read user tables; signed-in app reads still work ---
+    if "l4" in TESTS:
+        for t in ["subscriptions", "usage_counters", "daily_usage", "swing_analyses", "chat_messages", "app_events"]:
+            s, b = http("GET", f"{BASE}/rest/v1/{t}?select=*&limit=1", anon)
+            check(f"l4: anon SELECT {t} refused", s in (401, 403), f"{s} {b[:120]}")
+        s, b = http("GET", f"{BASE}/rest/v1/tier_limits?select=*", anon)
+        check("l4: anon reads tier_limits", s == 200 and len(json.loads(b)) == 3, f"{s} {b[:120]}")
+        s, b = http("GET", f"{BASE}/rest/v1/subscriptions?select=tier,expires_at", user)
+        check("l4: signed-in user reads own subscriptions (BillingStore)", s == 200, f"{s} {b[:120]}")
+        s, b = http("POST", f"{BASE}/rest/v1/app_events", dict(user, Prefer="return=minimal"),
+                    {"user_id": uid, "event": "e2e_probe", "properties": {}})
+        check("l4: signed-in user inserts app_events (EventLogger)", s == 201, f"{s} {b[:160]}")
 
     # ---- L3: auth config + no email-verification step ----------------------
     if "l3" in TESTS:
