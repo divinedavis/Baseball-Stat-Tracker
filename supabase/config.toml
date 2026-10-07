@@ -434,3 +434,10 @@ entrypoint = "./functions/storekit-webhook/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/storekit-webhook/*.html" ]
+
+[functions.swing-media-sweep]
+enabled = true
+# Called by pg_cron with x-sweep-secret; no user JWT.
+verify_jwt = false
+import_map = "./functions/swing-media-sweep/deno.json"
+entrypoint = "./functions/swing-media-sweep/index.ts"

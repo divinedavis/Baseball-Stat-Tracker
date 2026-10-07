@@ -1,6 +1,6 @@
 # BARREL — Privacy Policy
 
-_Last updated: September 27, 2026_
+_Last updated: October 7, 2026_
 
 BARREL ("Barrel," "we," "us") is an iOS app for coaches, parents, and players to track at-bat outcomes and get AI feedback on swings. This policy explains what we collect, why, where it goes, and how to delete it.
 
@@ -19,7 +19,7 @@ BARREL ("Barrel," "we," "us") is an iOS app for coaches, parents, and players to
 | Password (hashed) | Email signup only | Supabase Auth (bcrypt) | Sign-in; the plaintext is never stored |
 | Apple user identifier | Sign in with Apple | Supabase Auth + iOS Keychain | Sign-in |
 | Display name | Account creation | Supabase Auth metadata + iOS Keychain | Greeting in the UI |
-| Swing photo or video you submit for analysis (this usually shows the player, who may be a child) | When you tap "Analyze swing" | Supabase Storage (private bucket, path scoped to your user ID); kept until you delete your account | Sent to Anthropic's Claude API to generate feedback |
+| Swing photo or video you submit for analysis (this usually shows the player, who may be a child) | When you tap "Analyze swing" | Supabase Storage (private bucket, path scoped to your user ID); deleted as soon as the analysis finishes (successful or not), and any upload that never reached analysis is deleted automatically within 30 days | Sent to Anthropic's Claude API to generate feedback |
 | Optional note you type with a swing | When you tap "Analyze swing" | Sent with the swing to Anthropic; the feedback is saved in `swing_analyses` | Context for the feedback |
 | AI feedback text | Generated when you analyze a swing or chat | Supabase database (`swing_analyses`, `chat_messages`) | Show feedback in the app and in your history |
 | Your AI chat messages | When you send a chat | Supabase database (`chat_messages`) | Conversation history |
@@ -77,7 +77,10 @@ coach or parent who holds the account:
   "Analyze swing", the photo or video (which usually shows the player's body
   and may show their face) is uploaded to our Supabase storage, and the image
   (or a frame from the video) is sent to **Anthropic** to generate coaching
-  feedback. The media stays in Supabase storage until the account is deleted.
+  feedback. The media is deleted from Supabase storage as soon as the analysis
+  finishes; anything left behind (for example if the app was closed
+  mid-upload) is deleted automatically within 30 days. Only the text
+  feedback is kept.
   Any note typed with the swing, the AI feedback, and AI chat messages are
   stored in our Supabase database. Please don't type a child's full name or
   other identifying details into notes or chat — the AI does not need them.
@@ -92,7 +95,7 @@ coach or parent who holds the account:
   swing media, AI feedback and chat, email us and we will send a copy of
   everything held on our servers for the account within 30 days.
 - **Delete** it — in the app, tap the profile icon (top right) → **Delete
-  Account**. This removes the swing photos and videos from storage, deletes the
+  Account**. This removes any swing photos and videos still in storage, deletes the
   analyses, chat, subscription and usage records, and wipes the roster and
   at-bat data on the device. A single player's roster entry and stats can be
   deleted from the roster list.
@@ -116,7 +119,7 @@ Residents of the EU/UK (GDPR) and California (CCPA/CPRA) have the additional rig
 
 ## Retention
 
-We keep account data for as long as your account exists. When you delete your account the cascade above runs immediately; backups are purged on Supabase's standard rolling retention (typically 7 days for daily backups). Aggregated, non-identifiable counts (e.g., "how many users tapped the paywall this week") may be retained indefinitely.
+Swing photos and videos are deleted when their analysis finishes, and in any case within 30 days of upload. We keep other account data for as long as your account exists. When you delete your account the cascade above runs immediately; backups are purged on Supabase's standard rolling retention (typically 7 days for daily backups). Aggregated, non-identifiable counts (e.g., "how many users tapped the paywall this week") may be retained indefinitely.
 
 ## Security
 

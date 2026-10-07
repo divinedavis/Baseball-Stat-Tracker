@@ -7,6 +7,11 @@
 // the analysis to `swing_analyses`, increment quota counters, and return the
 // feedback. Quota is reserved atomically before the Claude call and refunded
 // if the download or the Claude call fails.
+//
+// The uploaded media (usually a child) is deleted from storage as soon as
+// this request finishes, whatever the outcome — only the text feedback is
+// kept. Uploads that never reach this function are removed by the daily
+// swing-media-sweep after 30 days.
 
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { requireUser, jsonError } from "../_shared/auth.ts";
@@ -66,134 +71,140 @@ Deno.serve(async (req) => {
     return jsonError(403, "path does not belong to user");
   }
 
-  // Reserve one swing atomically (check + increment in one locked
-  // transaction) before any expensive work; refunded on failure below.
-  const { data: quota, error: quotaErr } = await service.rpc("reserve_quota", {
-    p_user: userId,
-    p_kind: "swing",
-  });
-  if (quotaErr || !quota || !quota[0]) return jsonError(500, "quota check failed");
-  const q = quota[0];
-  if (!q.allowed) {
+  try {
+    // Reserve one swing atomically (check + increment in one locked
+    // transaction) before any expensive work; refunded on failure below.
+    const { data: quota, error: quotaErr } = await service.rpc("reserve_quota", {
+      p_user: userId,
+      p_kind: "swing",
+    });
+    if (quotaErr || !quota || !quota[0]) return jsonError(500, "quota check failed");
+    const q = quota[0];
+    if (!q.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "quota_exceeded",
+          reason: q.reason,
+          tier: q.tier,
+          monthly_remaining: q.monthly_remaining,
+          daily_remaining: q.daily_remaining,
+        }),
+        { status: 402, headers: { "content-type": "application/json" } },
+      );
+    }
+
+    const refund = () => service.rpc("release_quota", { p_user: userId, p_kind: "swing" });
+
+    // Download the media from storage.
+    const { data: file, error: dlErr } = await service.storage
+      .from("swing-media")
+      .download(storage_path);
+    if (dlErr || !file) {
+      await refund();
+      return jsonError(404, "media not found");
+    }
+    if (file.size > MAX_MEDIA_BYTES) {
+      await refund();
+      return jsonError(413, "media too large", { max_bytes: MAX_MEDIA_BYTES });
+    }
+
+    const mimeType = file.type || (media_kind === "video" ? "video/mp4" : "image/jpeg");
+
+    let imageBlocks: ContentBlock[];
+
+    if (media_kind === "photo") {
+      const buf = new Uint8Array(await file.arrayBuffer());
+      imageBlocks = [
+        {
+          type: "image",
+          source: { type: "base64", media_type: mimeType, data: base64(buf) },
+        },
+      ];
+    } else {
+      // For video: Claude's vision API takes images, not video. We trust the
+      // iOS app to extract a small number of representative frames (uniformly
+      // sampled across the clip) and upload them as a multipart bundle, OR
+      // we accept a single keyframe in v1. For now: treat the uploaded asset
+      // as the cover frame and ask the user to upload more frames from the
+      // app side later. Keeps v1 shippable.
+      const buf = new Uint8Array(await file.arrayBuffer());
+      imageBlocks = [
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: "image/jpeg",
+            data: base64(buf),
+          },
+        },
+      ];
+    }
+
+    // Cache the system prompt so repeat analyses cost less.
+    const systemBlocks: ContentBlock[] = [
+      { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+    ];
+
+    const userText = note?.trim()
+      ? `Player note: ${note.trim()}\n\nAnalyze the swing.`
+      : "Analyze the swing.";
+
+    let claude;
+    try {
+      claude = await callClaude({
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system: systemBlocks,
+        messages: [
+          {
+            role: "user",
+            content: [...imageBlocks, { type: "text", text: userText }],
+          },
+        ],
+      });
+    } catch (e) {
+      console.error("ai-analyze-swing claude call failed", e instanceof Error ? e.message : e);
+      await refund();
+      return jsonError(502, "ai_unavailable");
+    }
+
+    const feedback = claude.content
+      .filter((c) => c.type === "text")
+      .map((c) => c.text)
+      .join("\n\n");
+
+    // Persist the analysis + bump usage counters.
+    const { data: row, error: insertErr } = await service
+      .from("swing_analyses")
+      .insert({
+        user_id: userId,
+        storage_path,
+        media_kind,
+        feedback,
+        model: claude.model,
+        input_tokens: claude.usage.input_tokens,
+        output_tokens: claude.usage.output_tokens,
+      })
+      .select()
+      .single();
+
+    if (insertErr) return jsonError(500, "failed to save analysis", { detail: insertErr.message });
+
     return new Response(
       JSON.stringify({
-        error: "quota_exceeded",
-        reason: q.reason,
+        id: row.id,
+        feedback,
         tier: q.tier,
-        monthly_remaining: q.monthly_remaining,
-        daily_remaining: q.daily_remaining,
+        monthly_remaining: q.monthly_remaining - 1,
+        daily_remaining: q.daily_remaining - 1,
       }),
-      { status: 402, headers: { "content-type": "application/json" } },
+      { headers: { "content-type": "application/json", ...corsHeaders } },
     );
+  } finally {
+    // Never keep the media past this request.
+    const { error: rmErr } = await service.storage.from("swing-media").remove([storage_path]);
+    if (rmErr) console.error("ai-analyze-swing: media delete failed", rmErr.message);
   }
-
-  const refund = () => service.rpc("release_quota", { p_user: userId, p_kind: "swing" });
-
-  // Download the media from storage.
-  const { data: file, error: dlErr } = await service.storage
-    .from("swing-media")
-    .download(storage_path);
-  if (dlErr || !file) {
-    await refund();
-    return jsonError(404, "media not found");
-  }
-  if (file.size > MAX_MEDIA_BYTES) {
-    await refund();
-    return jsonError(413, "media too large", { max_bytes: MAX_MEDIA_BYTES });
-  }
-
-  const mimeType = file.type || (media_kind === "video" ? "video/mp4" : "image/jpeg");
-
-  let imageBlocks: ContentBlock[];
-
-  if (media_kind === "photo") {
-    const buf = new Uint8Array(await file.arrayBuffer());
-    imageBlocks = [
-      {
-        type: "image",
-        source: { type: "base64", media_type: mimeType, data: base64(buf) },
-      },
-    ];
-  } else {
-    // For video: Claude's vision API takes images, not video. We trust the
-    // iOS app to extract a small number of representative frames (uniformly
-    // sampled across the clip) and upload them as a multipart bundle, OR
-    // we accept a single keyframe in v1. For now: treat the uploaded asset
-    // as the cover frame and ask the user to upload more frames from the
-    // app side later. Keeps v1 shippable.
-    const buf = new Uint8Array(await file.arrayBuffer());
-    imageBlocks = [
-      {
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: "image/jpeg",
-          data: base64(buf),
-        },
-      },
-    ];
-  }
-
-  // Cache the system prompt so repeat analyses cost less.
-  const systemBlocks: ContentBlock[] = [
-    { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
-  ];
-
-  const userText = note?.trim()
-    ? `Player note: ${note.trim()}\n\nAnalyze the swing.`
-    : "Analyze the swing.";
-
-  let claude;
-  try {
-    claude = await callClaude({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: systemBlocks,
-      messages: [
-        {
-          role: "user",
-          content: [...imageBlocks, { type: "text", text: userText }],
-        },
-      ],
-    });
-  } catch (e) {
-    console.error("ai-analyze-swing claude call failed", e instanceof Error ? e.message : e);
-    await refund();
-    return jsonError(502, "ai_unavailable");
-  }
-
-  const feedback = claude.content
-    .filter((c) => c.type === "text")
-    .map((c) => c.text)
-    .join("\n\n");
-
-  // Persist the analysis + bump usage counters.
-  const { data: row, error: insertErr } = await service
-    .from("swing_analyses")
-    .insert({
-      user_id: userId,
-      storage_path,
-      media_kind,
-      feedback,
-      model: claude.model,
-      input_tokens: claude.usage.input_tokens,
-      output_tokens: claude.usage.output_tokens,
-    })
-    .select()
-    .single();
-
-  if (insertErr) return jsonError(500, "failed to save analysis", { detail: insertErr.message });
-
-  return new Response(
-    JSON.stringify({
-      id: row.id,
-      feedback,
-      tier: q.tier,
-      monthly_remaining: q.monthly_remaining - 1,
-      daily_remaining: q.daily_remaining - 1,
-    }),
-    { headers: { "content-type": "application/json", ...corsHeaders } },
-  );
 });
 
 function base64(buf: Uint8Array): string {

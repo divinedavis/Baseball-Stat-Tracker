@@ -11,7 +11,7 @@ request here is refused before the Claude call.
 The service-role key is fetched at runtime from the Management API and is
 never printed or written to disk.
 """
-import json, os, subprocess, sys, uuid, urllib.error, urllib.request
+import json, os, subprocess, sys, time, uuid, urllib.error, urllib.request
 
 REF = "ifcsanqnrbefgsydcfgf"
 BASE = f"https://{REF}.supabase.co"
@@ -21,11 +21,15 @@ def http(method, url, headers=None, body=None, raw=None):
     data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)
     h = dict(UA); h.update(headers or {})
     if body is not None: h.setdefault("Content-Type", "application/json")
-    req = urllib.request.Request(url, data=data, method=method, headers=h)
-    try:
-        r = urllib.request.urlopen(req, timeout=60); return r.status, r.read().decode()
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode()
+    for attempt in range(3):
+        req = urllib.request.Request(url, data=data, method=method, headers=h)
+        try:
+            r = urllib.request.urlopen(req, timeout=60); return r.status, r.read().decode()
+        except urllib.error.HTTPError as e:
+            return e.code, e.read().decode()
+        except urllib.error.URLError:   # transient TLS resets
+            if attempt == 2: raise
+            time.sleep(1 + attempt)
 
 pat = os.environ.get("SUPABASE_ACCESS_TOKEN") or subprocess.check_output(
     ["security", "find-generic-password", "-a", os.environ["USER"], "-s", "supabase-pat-clockin", "-w"]).decode().strip()
@@ -85,6 +89,25 @@ try:
         names = [f"{o['name']}" for o in objects()]
         http("DELETE", f"{BASE}/storage/v1/object/swing-media", svc, {"prefixes": names})
         check("m3: cleanup", len(objects()) == 0)
+
+    # ---- L1: analyze deletes the media whatever the outcome ----------------
+    if "l1" in TESTS:
+        # Exhaust today's swings so the request is refused BEFORE any Claude call.
+        sql(f"insert into public.daily_usage (user_id, day, swings_used) values ('{uid}', current_date, 99) "
+            f"on conflict (user_id, day) do update set swings_used = 99")
+        (s, b), path = upload(1024)
+        check("l1: upload ok", s == 200, f"{s} {b[:200]}")
+        s, b = http("POST", f"{BASE}/functions/v1/ai-analyze-swing", user,
+                    {"storage_path": path, "media_kind": "photo"})
+        check("l1: analyze refused by quota (no Claude call)", s == 402, f"{s} {b[:200]}")
+        check("l1: media deleted after refused analyze", len(objects()) == 0, objects())
+        # Sweep endpoint rejects callers without the secret.
+        s, _ = http("POST", f"{BASE}/functions/v1/swing-media-sweep", anon, {})
+        check("l1: sweep refuses anon", s == 403, s)
+        expired = sql("select count(*) as n from public.swing_media_expired(30, 1000)")[0]["n"]
+        check("l1: nothing older than 30 days in swing-media", expired == 0, expired)
+        jobs = sql("select jobname from cron.job where jobname = 'swing-media-sweep' and active")
+        check("l1: daily sweep cron scheduled", len(jobs) == 1, jobs)
 
 finally:
     names = [o["name"] for o in objects()]
