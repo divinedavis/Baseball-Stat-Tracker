@@ -109,6 +109,23 @@ try:
         jobs = sql("select jobname from cron.job where jobname = 'swing-media-sweep' and active")
         check("l1: daily sweep cron scheduled", len(jobs) == 1, jobs)
 
+    # ---- L3: auth config + no email-verification step ----------------------
+    if "l3" in TESTS:
+        _, cfg = http("GET", f"https://api.supabase.com/v1/projects/{REF}/config/auth",
+                      {"Authorization": f"Bearer {pat}"})
+        cfg = json.loads(cfg)
+        check("l3: site_url is the public site, not localhost",
+              cfg["site_url"].startswith("https://") and "localhost" not in cfg["site_url"], cfg["site_url"])
+        check("l3: no extra redirect URLs allowed", not cfg.get("uri_allow_list"), cfg.get("uri_allow_list"))
+        check("l3: email signup needs no confirmation (owner rule)", cfg["mailer_autoconfirm"] is True)
+        e2, p2 = f"e2e-{uuid.uuid4()}@test.invalid", uuid.uuid4().hex
+        s, b = http("POST", f"{BASE}/auth/v1/signup", {"apikey": ANON}, {"email": e2, "password": p2})
+        body = json.loads(b) if b.startswith("{") else {}
+        check("l3: email signup returns a session immediately", s == 200 and body.get("access_token"), f"{s} {b[:200]}")
+        new_id = (body.get("user") or {}).get("id")
+        if new_id:
+            http("DELETE", f"{BASE}/auth/v1/admin/users/{new_id}", svc)
+
 finally:
     names = [o["name"] for o in objects()]
     if names:
