@@ -188,7 +188,12 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
-    if (insertErr) return jsonError(500, "failed to save analysis", { detail: insertErr.message });
+    if (insertErr) {
+      // Log the DB error server-side only; the client gets a generic message
+      // (raw Postgres errors leak schema/constraint names).
+      console.error("ai-analyze-swing: swing_analyses insert failed", insertErr.code, insertErr.message);
+      return jsonError(500, "failed to save analysis");
+    }
 
     return new Response(
       JSON.stringify({
