@@ -1,0 +1,16 @@
+name: Edge function tests
+on:
+  push:
+    paths: ["supabase/**", "scripts/run_server_tests.sh", ".github/workflows/server-tests.yml"]
+  pull_request:
+    paths: ["supabase/**"]
+jobs:
+  deno:
+    runs-on: ubuntu-latest   # public repo: free minutes
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: scripts/run_server_tests.sh

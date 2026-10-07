@@ -9,7 +9,16 @@
 //   2. Verify the chain links cryptographically (each cert signed by the next).
 //   3. Verify the chain terminates at Apple's pinned Root CA - G3.
 //   4. Verify every cert in the chain is within its validity window.
-//   5. Verify the JWS signature itself with the *leaf* cert's public key.
+//   5. Verify the leaf and intermediate carry Apple's App Store marker OIDs
+//      (leaf 1.2.840.113635.100.6.11.1 = App Store receipt signing,
+//      intermediate 1.2.840.113635.100.6.2.1 = Apple WWDR CA). Apple Root CA
+//      - G3 anchors MANY Apple PKIs (Apple Pay, Wallet, developer certs...);
+//      without the OID checks any cert Apple ever issued under G3 — including
+//      ones whose private key sits with a third party — could sign a payload
+//      we would accept. Apple's app-store-server-library enforces both.
+//   6. Verify the JWS signature itself with the *leaf* cert's public key.
+//   7. (Outer notification only) reject a stale or future signedDate so an
+//      old captured notification cannot be replayed to re-grant a tier.
 //
 // Only the leaf public key (validated by the chain) is allowed to sign the
 // payload, so a forged/self-signed payload is rejected before any DB write.
@@ -50,7 +59,29 @@ const APPLE_ROOT_CA_G3 = new x509.X509Certificate(
   Uint8Array.from(atob(APPLE_ROOT_CA_G3_DER_B64), (c) => c.charCodeAt(0)),
 );
 
+// Marker OIDs from Apple's app-store-server-library (ChainVerifier).
+export const APP_STORE_LEAF_OID = "1.2.840.113635.100.6.11.1";
+export const APPLE_WWDR_INTERMEDIATE_OID = "1.2.840.113635.100.6.2.1";
+
 export class JWSVerificationError extends Error {}
+
+export type VerifyOptions = {
+  /** Clock used for cert validity + signedDate checks (tests pin it). */
+  now?: Date;
+  /** Trust anchor; defaults to the pinned Apple Root CA - G3 (tests swap it). */
+  root?: x509.X509Certificate;
+  /**
+   * When set, the verified payload must carry a numeric `signedDate` (ms)
+   * no older than this and no more than CLOCK_SKEW_MS in the future.
+   */
+  maxAgeMs?: number;
+};
+
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+function hasExtension(cert: x509.X509Certificate, oid: string): boolean {
+  return cert.extensions.some((e) => e.type === oid);
+}
 
 function derToPem(certB64: string): string {
   const lines = certB64.match(/.{1,64}/g)?.join("\n") ?? certB64;
@@ -62,9 +93,12 @@ function derToPem(certB64: string): string {
 async function validateChain(
   x5c: string[],
   now: Date,
+  root: x509.X509Certificate,
 ): Promise<x509.X509Certificate> {
-  if (!Array.isArray(x5c) || x5c.length < 2) {
-    throw new JWSVerificationError("x5c chain missing or too short");
+  // Apple always sends exactly [leaf, intermediate, root]; the library
+  // rejects any other length, so do we.
+  if (!Array.isArray(x5c) || x5c.length !== 3) {
+    throw new JWSVerificationError("x5c chain must have exactly 3 certificates");
   }
 
   // Parsing untrusted DER can throw low-level ASN.1 errors; normalise them to
@@ -88,6 +122,15 @@ async function validateChain(
     }
   }
 
+  // App Store marker OIDs: a G3-anchored chain from any other Apple PKI
+  // (or a non-App-Store leaf under the WWDR intermediate) is refused.
+  if (!hasExtension(chain[0], APP_STORE_LEAF_OID)) {
+    throw new JWSVerificationError("leaf certificate is not an App Store signing cert");
+  }
+  if (!hasExtension(chain[1], APPLE_WWDR_INTERMEDIATE_OID)) {
+    throw new JWSVerificationError("intermediate certificate is not Apple WWDR");
+  }
+
   // Each cert must be signed by the next one up the chain.
   for (let i = 0; i < chain.length - 1; i++) {
     let ok = false;
@@ -101,7 +144,6 @@ async function validateChain(
 
   // The top of the presented chain must chain to the pinned Apple root.
   const top = chain[chain.length - 1];
-  const root = APPLE_ROOT_CA_G3;
   const rootPublicKey = root.publicKey;
   if (now < root.notBefore || now > root.notAfter) {
     throw new JWSVerificationError("pinned Apple root outside validity window");
@@ -128,7 +170,10 @@ async function validateChain(
 // Verify a single Apple JWS and return its decoded payload object. Throws
 // JWSVerificationError on any failure (forged signature, untrusted/expired
 // cert, missing x5c, algorithm mismatch, etc.).
-export async function verifyAppleJWS<T>(jws: string): Promise<T> {
+export async function verifyAppleJWS<T>(
+  jws: string,
+  opts: VerifyOptions = {},
+): Promise<T> {
   if (typeof jws !== "string" || jws.split(".").length !== 3) {
     throw new JWSVerificationError("malformed JWS");
   }
@@ -147,10 +192,11 @@ export async function verifyAppleJWS<T>(jws: string): Promise<T> {
     throw new JWSVerificationError("JWS header missing x5c chain");
   }
 
-  const now = new Date();
-  // validateChain throws unless the presented x5c links cryptographically and
-  // anchors to the pinned Apple Root CA - G3, so the leaf key is trusted.
-  await validateChain(header.x5c, now);
+  const now = opts.now ?? new Date();
+  // validateChain throws unless the presented x5c links cryptographically,
+  // carries the App Store OIDs, and anchors to the pinned Apple Root CA - G3,
+  // so the leaf key is trusted.
+  await validateChain(header.x5c, now, opts.root ?? APPLE_ROOT_CA_G3);
 
   // Verify the JWS signature with the (now-trusted) leaf certificate key.
   // Apple's signed payloads are bare JWS over a JSON body (not RFC 7519 JWTs
@@ -168,9 +214,26 @@ export async function verifyAppleJWS<T>(jws: string): Promise<T> {
     );
   }
 
+  let body: T;
   try {
-    return JSON.parse(new TextDecoder().decode(plaintext)) as T;
+    body = JSON.parse(new TextDecoder().decode(plaintext)) as T;
   } catch {
     throw new JWSVerificationError("verified JWS body is not valid JSON");
   }
+
+  if (opts.maxAgeMs !== undefined) {
+    const signedDate = (body as { signedDate?: unknown })?.signedDate;
+    if (typeof signedDate !== "number" || !Number.isFinite(signedDate)) {
+      throw new JWSVerificationError("payload missing signedDate");
+    }
+    const age = now.getTime() - signedDate;
+    if (age > opts.maxAgeMs) {
+      throw new JWSVerificationError("signedDate too old (possible replay)");
+    }
+    if (age < -CLOCK_SKEW_MS) {
+      throw new JWSVerificationError("signedDate is in the future");
+    }
+  }
+
+  return body;
 }

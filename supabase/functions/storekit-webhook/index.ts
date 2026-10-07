@@ -23,6 +23,11 @@ import { verifyAppleJWS, JWSVerificationError } from "./appleJWS.ts";
 
 const EXPECTED_BUNDLE_ID = "com.divinedavis.BaseballStatTracker";
 
+// Apple retries a failed delivery 5 times at 1, 12, 24, 48 and 72 hours after
+// the previous attempt (~6.5 days in total). Anything signed longer ago than
+// that cannot be a genuine (re)delivery and is treated as a replay.
+const MAX_NOTIFICATION_AGE_MS = 8 * 24 * 60 * 60 * 1000;
+
 const PRODUCT_TIER: Record<string, "standard" | "pro"> = {
   "com.divinedavis.BaseballStatTracker.aistandard.monthly": "standard",
   "com.divinedavis.BaseballStatTracker.aipro.monthly": "pro",
@@ -40,13 +45,20 @@ Deno.serve(async (req) => {
   // 1) Verify the outer notification JWS against Apple's pinned root.
   let payload: NotificationPayload;
   try {
-    payload = await verifyAppleJWS<NotificationPayload>(body.signedPayload);
+    payload = await verifyAppleJWS<NotificationPayload>(body.signedPayload, {
+      maxAgeMs: MAX_NOTIFICATION_AGE_MS,
+    });
   } catch (e) {
     if (e instanceof JWSVerificationError) {
       console.warn("storekit-webhook: rejected unverified signedPayload:", e.message);
       return new Response("invalid signature", { status: 400 });
     }
     throw e;
+  }
+
+  // ASC "Request a Test Notification" — verified above, nothing to record.
+  if (payload?.notificationType === "TEST") {
+    return new Response("ok", { status: 200 });
   }
 
   if (!payload?.data?.signedTransactionInfo) {
@@ -143,6 +155,7 @@ Deno.serve(async (req) => {
 
 type NotificationPayload = {
   notificationType: string;
+  signedDate?: number;
   subtype?: string;
   data: {
     environment?: string;
