@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Live end-to-end checks against the real project (local only, needs the PAT).
+
+Creates a throwaway confirmed user (e2e-<uuid>@test.invalid) via the admin
+API, exercises the endpoints as that user / as anon, then deletes the user
+and its storage objects. Makes NO Anthropic calls: every ai-analyze-swing
+request here is refused before the Claude call.
+
+  python3 supabase/tests/e2e_live.py
+
+The service-role key is fetched at runtime from the Management API and is
+never printed or written to disk.
+"""
+import json, os, subprocess, sys, uuid, urllib.error, urllib.request
+
+REF = "ifcsanqnrbefgsydcfgf"
+BASE = f"https://{REF}.supabase.co"
+UA = {"User-Agent": "curl/8.7.1"}
+
+def http(method, url, headers=None, body=None, raw=None):
+    data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)
+    h = dict(UA); h.update(headers or {})
+    if body is not None: h.setdefault("Content-Type", "application/json")
+    req = urllib.request.Request(url, data=data, method=method, headers=h)
+    try:
+        r = urllib.request.urlopen(req, timeout=60); return r.status, r.read().decode()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode()
+
+pat = os.environ.get("SUPABASE_ACCESS_TOKEN") or subprocess.check_output(
+    ["security", "find-generic-password", "-a", os.environ["USER"], "-s", "supabase-pat-clockin", "-w"]).decode().strip()
+_, keys = http("GET", f"https://api.supabase.com/v1/projects/{REF}/api-keys?reveal=true",
+               {"Authorization": f"Bearer {pat}"})
+keys = json.loads(keys)
+def key(name): return next(k["api_key"] for k in keys if k.get("name") == name)
+SERVICE, ANON = key("service_role"), key("anon")
+svc = {"apikey": SERVICE, "Authorization": f"Bearer {SERVICE}"}
+
+def sql(q):
+    s, b = http("POST", f"https://api.supabase.com/v1/projects/{REF}/database/query",
+                {"Authorization": f"Bearer {pat}"}, {"query": q})
+    assert s in (200, 201), b
+    return json.loads(b)
+
+failures = []
+def check(name, cond, detail=""):
+    print(("ok   " if cond else "FAIL ") + name + ("" if cond else f"  -> {detail}"))
+    if not cond: failures.append(name)
+
+email, pw = f"e2e-{uuid.uuid4()}@test.invalid", uuid.uuid4().hex
+s, b = http("POST", f"{BASE}/auth/v1/admin/users", svc,
+            {"email": email, "password": pw, "email_confirm": True})
+assert s == 200, b
+uid = json.loads(b)["id"]
+
+def objects():
+    return sql(f"select name from storage.objects where bucket_id='swing-media' and name like '{uid}/%'")
+
+try:
+    s, b = http("POST", f"{BASE}/auth/v1/token?grant_type=password", {"apikey": ANON},
+                {"email": email, "password": pw})
+    assert s == 200, b
+    jwt = json.loads(b)["access_token"]
+    user = {"apikey": ANON, "Authorization": f"Bearer {jwt}"}
+    anon = {"apikey": ANON, "Authorization": f"Bearer {ANON}"}
+
+    def upload(size, name=None, h=None):
+        name = name or f"{uuid.uuid4()}.jpg"
+        return http("POST", f"{BASE}/storage/v1/object/swing-media/{uid}/{name}",
+                    dict(h or user, **{"Content-Type": "image/jpeg"}), raw=b"\xff" * size), f"{uid}/{name}"
+
+    TESTS = sys.argv[1:] or ["m3", "l1", "l2", "l4"]
+
+    # ---- M3: 5 MB bucket limit + 20 objects per user ------------------------
+    if "m3" in TESTS:
+        (s, b), _ = upload(5 * 1024 * 1024 + 1)
+        check("m3: >5MB upload refused", s in (400, 413), f"{s} {b[:200]}")
+        (s, b), _ = upload(1024)
+        check("m3: small upload accepted", s == 200, f"{s} {b[:200]}")
+        for i in range(19):
+            upload(10)
+        check("m3: user holds 20 objects", len(objects()) == 20, len(objects()))
+        (s, b), _ = upload(10)
+        check("m3: 21st object refused", s in (400, 403), f"{s} {b[:200]}")
+        names = [f"{o['name']}" for o in objects()]
+        http("DELETE", f"{BASE}/storage/v1/object/swing-media", svc, {"prefixes": names})
+        check("m3: cleanup", len(objects()) == 0)
+
+finally:
+    names = [o["name"] for o in objects()]
+    if names:
+        http("DELETE", f"{BASE}/storage/v1/object/swing-media", svc, {"prefixes": names})
+    s, b = http("DELETE", f"{BASE}/auth/v1/admin/users/{uid}", svc)
+    check("teardown: test user deleted", s == 200, f"{s} {b[:200]}")
+
+sys.exit(1 if failures else 0)
