@@ -100,7 +100,9 @@ struct AIPaywallView: View {
                 "Auto-renewable monthly subscription. Payment is charged to your "
                 + "Apple Account at confirmation of purchase. Subscription auto-renews "
                 + "unless cancelled at least 24 hours before the end of the current "
-                + "period. Manage or cancel in Settings → Apple ID → Subscriptions."
+                + "period. Manage or cancel in Settings → Apple ID → Subscriptions. "
+                + "Monthly AI limits reset on the 1st of each month; every plan is also limited to "
+                + "\(AITier.questionsPerMinute) AI questions and \(AITier.swingsPerMinute) swing analyses a minute."
             )
             .font(.footnote)
             .foregroundStyle(.secondary)
@@ -239,7 +241,7 @@ private struct PlanCard: View {
                             .foregroundStyle(.tint)
                     }
                 }
-                Text(product.description)
+                Text((isPro ? AITier.pro : AITier.standard).planSummary)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

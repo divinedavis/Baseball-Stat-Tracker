@@ -24,7 +24,7 @@ BARREL ("Barrel," "we," "us") is an iOS app for coaches, parents, and players to
 | AI feedback text | Generated when you analyze a swing or chat | Supabase database (`swing_analyses`, `chat_messages`) | Show feedback in the app and in your history |
 | Your AI chat messages | When you send a chat | Supabase database (`chat_messages`) | Conversation history |
 | Subscription tier and Apple transaction ID | When you purchase or restore a subscription | Supabase database (`subscriptions`) | Enforce quota and entitlements |
-| Quota counters (number of swings/questions used per day and month) | Each AI request | Supabase database (`usage_counters`, `daily_usage`) | Enforce free/Standard/Pro tier limits |
+| Quota counters (number of swings/questions used per minute, day and month; per-minute counts are deleted after an hour) | Each AI request | Supabase database (`usage_counters`, `daily_usage`, `ai_rate_buckets`) | Enforce free/Standard/Pro tier limits |
 | Product interaction events (e.g., screen viewed, "Analyze swing" tapped, paywall shown, subscribe completed) | While you use the app | Supabase database (`app_events`) | Understand which features are used and where users get stuck so we can improve the app |
 | App version, OS version, and device model | Attached to product interaction events | Supabase database (`app_events`) | Diagnose issues by environment |
 

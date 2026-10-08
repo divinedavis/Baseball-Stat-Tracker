@@ -25,8 +25,27 @@ enum AITier: String, Codable {
         switch self {
         case .free: return 5
         case .standard: return 30
-        case .pro: return -1
+        case .pro: return 1000
         }
+    }
+    /// Per-minute ceilings enforced by reserve_quota on every tier
+    /// (public.reserve_quota, migration 20261007130000_ai_rate_limits).
+    static let questionsPerMinute = 10
+    static let swingsPerMinute = 3
+
+    private static func count(_ n: Int) -> String {
+        n.formatted(.number.locale(Locale(identifier: "en_US")))
+    }
+    /// Factual allowance copy. Mirrors public.tier_limits on the server —
+    /// no tier is unlimited, so never say "unlimited" here.
+    var questionAllowance: String {
+        "Up to \(Self.count(monthlyQuestions)) AI coach questions a month"
+    }
+    /// One-line plan summary on the paywall cards. Used instead of the
+    /// StoreKit product description so the in-app copy always matches the
+    /// server limits, even while an ASC localization change is pending review.
+    var planSummary: String {
+        "\(monthlySwings) swing analyses + up to \(Self.count(monthlyQuestions)) AI questions a month"
     }
     var displayName: String {
         switch self {

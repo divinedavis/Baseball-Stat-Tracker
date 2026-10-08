@@ -166,9 +166,8 @@ private struct ProUpsell: View {
     }
 }
 
-/// Reminds paid users what their subscription unlocks. Tier-aware so Pro
-/// users see "unlimited" Q&A and the higher swing cap, Standard users see
-/// their actual numbers.
+/// Reminds paid users what their subscription unlocks, with each tier's
+/// actual monthly caps.
 private struct ProFeaturesCard: View {
     let tier: AITier
 
@@ -184,11 +183,7 @@ private struct ProFeaturesCard: View {
         "\(tier.monthlySwings) swing analyses / month · \(tier.dailySwings) per day"
     }
 
-    private var questionLine: String {
-        tier.monthlyQuestions < 0
-            ? "Unlimited AI coach questions"
-            : "\(tier.monthlyQuestions) AI coach questions / month"
-    }
+    private var questionLine: String { tier.questionAllowance }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {

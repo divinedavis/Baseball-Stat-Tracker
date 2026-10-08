@@ -2,8 +2,8 @@
 --
 -- 1. Pro had monthly_questions = -1 (unlimited), so one Pro account (or a
 --    script holding its session) could run Claude without bound. Pro now
---    gets a 1000/month fair-use ceiling (~33/day) — far above real use; the
---    marketing "unlimited AI Q&A" stays true for any human.
+--    gets a 1000/month ceiling (~33/day) — far above real use. App and
+--    store copy say "up to 1,000 AI questions a month", never "unlimited".
 -- 2. reserve_quota had no per-minute limit, so a tier's whole monthly
 --    allowance could be fired in a burst. It now refuses with reason
 --    'rate_limited' past RATE_* calls per user+kind per rolling minute

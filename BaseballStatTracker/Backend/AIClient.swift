@@ -37,6 +37,7 @@ final class AIClient {
                 case "monthly_swings_exhausted": return "You've used all your swing analyses for this month."
                 case "daily_swings_exhausted": return "Daily swing limit reached. Try again tomorrow."
                 case "monthly_questions_exhausted": return "You've used all your questions for this month."
+                case "rate_limited": return "That's a lot at once. Wait a minute and try again."
                 default: return "Quota exceeded."
                 }
             case .server(let msg): return msg

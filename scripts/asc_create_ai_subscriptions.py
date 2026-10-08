@@ -70,10 +70,11 @@ PRODUCTS = [
         "level": 1,
         "price_usd": "24.99",
         "display_name": "Barrel AI Pro",
-        "description": "50 swing analyses + unlimited AI Q&A monthly.",
+        "description": "50 swing analyses + up to 1,000 AI Q&A a month.",
         "review_note": (
             "Pro tier of Barrel AI. Subscribers can upload up to 50 swing "
-            "photos/videos per month with no question limit. 15 swings per day."
+            "photos/videos per month (15 per day) and ask up to 1,000 AI coach "
+            "questions per month, with per-minute rate limits."
         ),
     },
 ]
