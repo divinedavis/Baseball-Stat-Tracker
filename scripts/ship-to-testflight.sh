@@ -228,7 +228,10 @@ xcrun altool --upload-app \
 
 # ---------- poll & set release notes ----------
 info "waiting for processing + setting release notes"
-python3 "$SCRIPT_DIR/asc_set_whats_new.py" \
+# Homebrew python3 lacks PyJWT on this Mac; fall back to the system one.
+PY=python3
+python3 -c 'import jwt' 2>/dev/null || PY=/usr/bin/python3
+"$PY" "$SCRIPT_DIR/asc_set_whats_new.py" \
     --app-id "$ASC_APP_ID" \
     --version "$MARKETING" \
     --build "$NEXT_BUILD" \
