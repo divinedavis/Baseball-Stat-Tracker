@@ -218,6 +218,29 @@ commit them so the repo stays in lockstep with the UI.
 
 ---
 
+## ⚑ Rule #1c: APP REVIEW SANDBOX WINDOW (automatic)
+
+Sandbox StoreKit purchases resolve to the **free** tier unless the user is on
+`sandbox_tier_allowlist` or `billing_settings.sandbox_grants_open_until` is in
+the future (migration `20261007120000_sandbox_tier_gate`). App Review buys
+with its own sandbox Apple ID, so the window must be open during review.
+
+- `scripts/asc_submit_for_review.py` and `scripts/asc_resubmit_with_iaps.py`
+  open it for **14 days** (never shortening a later value) right before they
+  PATCH `submitted=true`, and print the expiry. If opening fails they abort
+  and do not submit.
+- Review running long or a rejection cycle?
+  `scripts/sandbox_review_window.py extend-if-in-review` re-opens for 14 days
+  only while a version is `WAITING_FOR_REVIEW` / `IN_REVIEW` (safe to run
+  daily). `open [--days N]` forces it (max 30), `status` shows it, `close`
+  ends it early after approval (otherwise it just expires).
+- Run these with `/usr/bin/python3` (it has PyJWT). PAT comes from the
+  keychain (`supabase-pat-clockin`), same as `scripts/run_sql_tests.py`.
+- Tests: `python3 -m unittest discover -s scripts/tests` (offline, in CI) and
+  `supabase/tests/sql/sandbox_review_window.test.sql` (live, rolled back).
+
+---
+
 ## ⚑ Rule #2: KEEP THIS FILE LOADED WITH IMPORTANT INFORMATION
 
 **Treat this file as the long-term memory for the project.** At the end of any session — or any time you learn something that would save a future session from re-discovering it — stop and ask: *is this worth writing down here?*

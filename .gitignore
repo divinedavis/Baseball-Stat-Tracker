@@ -42,3 +42,4 @@ GoogleService-Info.plist
 .env.local
 .env.*.local
 supabase/functions/**/deno.lock
+__pycache__/

@@ -32,6 +32,9 @@ from pathlib import Path
 
 import jwt
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from sandbox_review_window import DEFAULT_DAYS, open_window  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / "scripts" / "asc-config.env"
 API = "https://api.appstoreconnect.apple.com"
@@ -260,8 +263,12 @@ def find_build_id(app_id, token, build_number):
 
 def submit_for_review(submission_id, token, dry):
     if dry:
+        print(f"  [dry] would open the sandbox review window ({DEFAULT_DAYS} days)")
         print("  [dry] would PATCH submitted=true")
         return
+    # App Review buys with a sandbox Apple ID; open the window first so its
+    # purchase unlocks the tier. Raises (and so never submits) on failure.
+    open_window()
     body = {
         "data": {
             "type": "reviewSubmissions",

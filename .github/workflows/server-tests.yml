@@ -1,9 +1,9 @@
 name: Edge function tests
 on:
   push:
-    paths: ["supabase/**", "scripts/run_server_tests.sh", ".github/workflows/server-tests.yml"]
+    paths: ["supabase/**", "scripts/**", ".github/workflows/server-tests.yml"]
   pull_request:
-    paths: ["supabase/**"]
+    paths: ["supabase/**", "scripts/**"]
 jobs:
   deno:
     runs-on: ubuntu-latest   # public repo: free minutes
@@ -14,3 +14,9 @@ jobs:
         with:
           deno-version: v2.x
       - run: scripts/run_server_tests.sh
+  scripts:
+    runs-on: ubuntu-latest   # public repo: free minutes
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s scripts/tests -v

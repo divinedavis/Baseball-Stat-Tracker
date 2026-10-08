@@ -23,6 +23,7 @@ from asc_finalize_submission import (  # noqa: E402
     patch_categories, patch_age_rating, patch_review_notes,
     configure_pricing, configure_privacy,
 )
+from sandbox_review_window import open_window  # noqa: E402
 
 VERSION = "1.1"
 EN_LOCALE = "en-US"
@@ -98,6 +99,10 @@ def submit_for_review(app_id: str, version_id: str, token: str) -> None:
         print(f"  ✓ added version {version_id} to submission")
     else:
         print(f"  · version {version_id} already in submission")
+
+    # App Review buys with a sandbox Apple ID; open the window first so its
+    # purchase unlocks the tier. Raises (and so never submits) on failure.
+    open_window()
 
     body = {"data": {"type": "reviewSubmissions", "id": sub_id,
                      "attributes": {"submitted": True}}}
