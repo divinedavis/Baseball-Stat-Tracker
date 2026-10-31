@@ -151,6 +151,17 @@ EDITABLE_VERSION_STATES = {
 }
 
 
+def as_paragraphs(text):
+    """Release notes as short paragraphs with a blank line between them, never
+    bullets (owner, 2026-10-31: "line breaks with a space in between the
+    sentences instead of bullets ... do this for all our apps")."""
+    import re
+    if not text:
+        return text
+    lines = (line.strip() for line in str(text).replace("\r\n", "\n").split("\n"))
+    return "\n\n".join(re.sub(r"^[•●▪◦·\-\*–]\s+", "", line) for line in lines if line)
+
+
 def load_env(path: Path) -> dict:
     env = {}
     for line in path.read_text().splitlines():
@@ -263,7 +274,7 @@ def patch_version_localization(loc_id: str, locale: str, copy: dict, token: str,
                 "keywords": copy["keywords"],
                 "description": copy["description"],
                 "promotionalText": copy["promotionalText"],
-                "whatsNew": copy["whatsNew"],
+                "whatsNew": as_paragraphs(copy["whatsNew"]),
             },
         }
     }
@@ -287,7 +298,7 @@ def create_version_localization(version_id: str, locale: str, copy: dict, token:
                 "keywords": copy["keywords"],
                 "description": copy["description"],
                 "promotionalText": copy["promotionalText"],
-                "whatsNew": copy["whatsNew"],
+                "whatsNew": as_paragraphs(copy["whatsNew"]),
             },
             "relationships": {
                 "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}
