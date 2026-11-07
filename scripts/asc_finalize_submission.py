@@ -10,7 +10,7 @@ patches:
   3. App Review notes — local-auth explanation so reviewers don't try to
      sign in with pre-provisioned credentials that don't exist yet
   4. Pricing — Free, USA as base territory (propagates worldwide)
-  5. App Privacy — "No Data Collected" + publish the privacy notice
+  5. App Privacy — NOT done here any more (see configure_privacy)
 
 Re-runnable: every step is idempotent (PATCHes existing resources or
 checks before creating).
@@ -31,31 +31,11 @@ from asc_publish_metadata import (
 PRIMARY_CATEGORY = "SPORTS"
 SECONDARY_CATEGORY = "UTILITIES"
 
-REVIEW_NOTES = (
-    "No sign-in credentials needed. On first launch the app shows an auth "
-    "screen with two options:\n\n"
-    "  • \"Sign in with Apple\" — uses the reviewer's own Apple ID "
-    "(standard Apple flow)\n"
-    "  • \"Continue with email\" → \"Create account\" — creates a local-only "
-    "account on-device. Any email + password (6+ chars) + display name "
-    "works; there is no backend server validating credentials.\n\n"
-    "All data (roster, at-bats, game logs) is stored locally on the device. "
-    "There is no backend, no analytics, no tracking. The app does not "
-    "collect any user data and works fully offline.\n\n"
-    "ACCOUNT DELETION (addressing 5.1.1(v) — prior rejection submission "
-    "ID a2646958):\n\n"
-    "To delete an account:\n"
-    "  1. Tap the profile icon (top-left on the Player roster screen)\n"
-    "  2. Tap \"Delete Account\" (red, below Sign Out)\n"
-    "  3. Tap \"Delete\" in the confirmation alert\n\n"
-    "Deletion removes all on-device credentials and every roster, at-bat, "
-    "and game-log record. The app has no backend, so there is no "
-    "server-side token to revoke; for Sign in with Apple accounts the "
-    "on-device Apple user identifier is removed.\n\n"
-    "Screen recording (physical device, full flow — account creation → "
-    "profile menu → Delete Account → confirmation → signed out):\n"
-    "https://drive.google.com/file/d/1ItM9oBF9ox3OMgkdKnQaiqs9Zx_ShGAF/view?usp=share_link"
-)
+# Review notes live in scripts/review_notes.txt (shared with
+# asc_ship_version.py) so no stale copy can overwrite them. The old inline
+# text claimed "no backend, no data collected", which stopped being true
+# when accounts, AI analysis and app_events arrived.
+REVIEW_NOTES = (Path(__file__).resolve().parent / "review_notes.txt").read_text().strip()
 
 
 def patch_categories(info_id: str, token: str):
@@ -170,36 +150,13 @@ def configure_pricing(app_id: str, token: str):
 
 
 def configure_privacy(app_id: str, token: str):
-    # "No Data Collected" means: no appDataUsages declared, then publish.
-    # Step 1: ensure zero data-usage entries. (This app doesn't collect data.)
-    status, d = api("GET", f"/v1/apps/{app_id}/appDataUsages?limit=50", token)
-    existing = d.get("data", [])
-    if existing:
-        print(f"  warning: {len(existing)} appDataUsages already declared — not removing")
-        # Don't auto-delete these; could be legitimate user choices.
-    # Step 2: publish the privacy state. Endpoint is appDataUsagesPublishState.
-    # First GET to find the resource id.
-    status, d = api("GET", f"/v1/apps/{app_id}/dataUsagePublishState", token)
-    if status == 200 and d.get("data"):
-        publish_id = d["data"]["id"]
-        attrs = d["data"]["attributes"]
-        if attrs.get("published"):
-            print("  privacy already published — skipping")
-            return
-        body = {
-            "data": {
-                "type": "appDataUsagesPublishState",
-                "id": publish_id,
-                "attributes": {"published": True},
-            }
-        }
-        s2, pd = api("PATCH", f"/v1/appDataUsagesPublishState/{publish_id}", token, body)
-        if s2 >= 300:
-            print(f"  warn: could not publish privacy state ({s2}): {pd}")
-        else:
-            print("  ✓ privacy published — No Data Collected")
-    else:
-        print(f"  couldn't find publish state resource (status {status}): {str(d)[:200]}")
+    # This used to publish "No Data Collected". Barrel now collects account,
+    # swing media, AI chat, purchase and usage data (see PRIVACY.md and
+    # PrivacyInfo.xcprivacy), and the public API has no App Privacy resource
+    # (appDataUsages 404s). The label is published by
+    # scripts/asc_push_privacy_iris.py with a fresh fastlane session.
+    print("  skipped: publish the App Privacy label with scripts/asc_push_privacy_iris.py "
+          "(needs `fastlane spaceauth -u divinejdavis@gmail.com` first)")
 
 
 def main():

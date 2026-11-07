@@ -1,6 +1,6 @@
 # BARREL — Privacy Policy
 
-_Last updated: October 7, 2026_
+_Last updated: November 7, 2026_
 
 BARREL ("Barrel," "we," "us") is an iOS app for coaches, parents, and players to track at-bat outcomes and get AI feedback on swings. This policy explains what we collect, why, where it goes, and how to delete it.
 
@@ -19,6 +19,8 @@ BARREL ("Barrel," "we," "us") is an iOS app for coaches, parents, and players to
 | Password (hashed) | Email signup only | Supabase Auth (bcrypt) | Sign-in; the plaintext is never stored |
 | Apple user identifier | Sign in with Apple | Supabase Auth + iOS Keychain | Sign-in |
 | Display name | Account creation | Supabase Auth metadata + iOS Keychain | Greeting in the UI |
+| "13 or older" confirmation (a yes flag, `age_confirmed_13_plus`) — **not** your birth month or year | Account creation, after the age question | Supabase Auth metadata | Shows the account passed the age question |
+| Upload confirmation (a yes flag, `media_upload_attested`) | Before your first swing upload | Supabase Auth metadata + on the device | Shows you confirmed you are the player (13+) or the player's parent, guardian or coach with permission |
 | Swing photo or video you submit for analysis (this usually shows the player, who may be a child) | When you tap "Analyze swing" | Supabase Storage (private bucket, path scoped to your user ID); deleted as soon as the analysis finishes (successful or not), and any upload that never reached analysis is deleted automatically within 30 days | Sent to Anthropic's Claude API to generate feedback |
 | Optional note you type with a swing | When you tap "Analyze swing" | Sent with the swing to Anthropic; the feedback is saved in `swing_analyses` | Context for the feedback |
 | AI feedback text | Generated when you analyze a swing or chat | Supabase database (`swing_analyses`, `chat_messages`) | Show feedback in the app and in your history |
@@ -62,8 +64,22 @@ If you choose Sign in with Apple, Apple handles authentication. Barrel receives 
 Barrel is marketed to coaches and parents of youth teams, including 9–12-year-old
 teams, so much of the information in the app is **about children**. The app is
 meant to be used by adults: the account holder should be a coach, parent or
-guardian (or a player aged 13 or older). We do not knowingly let children under
-13 create their own accounts; if we learn one has, we will delete it.
+guardian (or a player aged 13 or older). **Barrel is not for children under 13
+to create their own accounts.** We do not knowingly let children under 13
+create accounts; if we learn one has, we will delete it.
+
+**Age question.** Before any new account is created (with email or a first
+Sign in with Apple), the app asks for a birth month and year. The answer is
+checked on the phone and is never sent to us; the account only gets a "13 or
+older" yes flag. If the answer is under 13, no account is created, the app
+asks the child to have a parent, guardian or coach set up the account, and the
+phone remembers that answer so it can't simply be changed. If a Sign in with
+Apple account was created a moment earlier, it is deleted again right away.
+
+**Uploads with permission.** Before the first swing photo or video, the person
+uploading must confirm they are the player (and 13 or older) or the player's
+parent, guardian or coach with permission to upload it. Coaches should only
+upload a player's swing with the parent's or guardian's permission.
 
 **What is collected about players, and by whom.** All of it is entered by the
 coach or parent who holds the account:
@@ -104,6 +120,10 @@ coach or parent who holds the account:
 - If a coach's account holds swing media of your child and you want it removed,
   email us with the team and approximate dates and we will work with the
   account holder to delete it within 30 days.
+- If you believe a child under 13 created a Barrel account, email us with the
+  account's email address (or the approximate sign-up date for a Sign in with
+  Apple account) and we will delete the account and everything stored with it.
+  We may ask a question or two to confirm you are the parent or guardian.
 
 Contact for any request about a child's information: **divinejdavis@gmail.com**.
 

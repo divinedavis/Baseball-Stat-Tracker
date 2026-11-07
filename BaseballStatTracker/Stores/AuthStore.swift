@@ -26,12 +26,24 @@ final class AuthStore: ObservableObject {
     @Published private(set) var currentUser: AuthUser?
     @Published var lastError: String?
     @Published private(set) var isLoading = false
+    /// True while a brand-new Sign in with Apple account waits for the
+    /// neutral age question. The session exists in Supabase but the app
+    /// treats the user as signed out until the gate is answered.
+    @Published private(set) var pendingAgeCheck = false
 
     private let sessionAccount = "session.currentUser"
     private let migrationFlagDefaultsKey = "bst.auth.migratedToSupabase"
     private let legacyV3Account = "session.credentials.v3"
     private let legacyV2Account = "session.credentials"
     private var pendingAppleNonce: String?
+    /// The Supabase user behind `pendingAgeCheck`.
+    private var pendingAgeUser: User?
+    /// Set while a Sign in with Apple exchange is in flight so the auth
+    /// listener doesn't sign the user in before the age decision.
+    private var appleExchangeInFlight = false
+    /// Survives an app kill mid-gate: a session for this user id is not
+    /// trusted on relaunch until the age question is answered.
+    static let pendingAgeUserDefaultsKey = "barrel.ageGate.pendingUserId"
     private var authStateTask: Task<Void, Never>?
 
     var isSignedIn: Bool { currentUser != nil }
@@ -85,7 +97,7 @@ final class AuthStore: ObservableObject {
                     switch change.event {
                     case .signedIn, .tokenRefreshed, .userUpdated:
                         if let session = change.session {
-                            self.persistFromSupabaseUser(session.user)
+                            self.adoptSessionUser(session.user)
                         }
                     case .signedOut:
                         self.clearLocalSession()
@@ -100,11 +112,23 @@ final class AuthStore: ObservableObject {
     private func refreshFromSupabase() async {
         do {
             let session = try await SupabaseService.client.auth.session
-            persistFromSupabaseUser(session.user)
+            adoptSessionUser(session.user)
         } catch {
             // No session — clear any stale Apple cache.
             clearLocalSession()
         }
+    }
+
+    /// Session events from the listener / startup refresh. Never lets a
+    /// user past the age gate: an Apple exchange in flight decides for
+    /// itself, and an account left mid-gate re-opens the question.
+    private func adoptSessionUser(_ user: User) {
+        if appleExchangeInFlight || pendingAgeCheck { return }
+        if UserDefaults.standard.string(forKey: Self.pendingAgeUserDefaultsKey) == user.id.uuidString {
+            beginAgeCheck(for: user)
+            return
+        }
+        persistFromSupabaseUser(user)
     }
 
     private func persistFromSupabaseUser(_ user: User) {
@@ -180,6 +204,7 @@ final class AuthStore: ObservableObject {
                 lastError = "Sign in with Apple failed (missing nonce)."
                 return
             }
+            appleExchangeInFlight = true
             let displayName: String? = [credential.fullName?.givenName,
                                         credential.fullName?.familyName]
                 .compactMap { $0 }
@@ -196,6 +221,7 @@ final class AuthStore: ObservableObject {
                     Task { @MainActor in
                         self.isLoading = false
                         self.pendingAppleNonce = nil
+                        self.appleExchangeInFlight = false
                     }
                 }
                 do {
@@ -207,15 +233,112 @@ final class AuthStore: ObservableObject {
                             user: UserAttributes(data: ["display_name": .string(displayName)])
                         )
                     }
-                    await MainActor.run {
-                        self.persistFromSupabaseUser(session.user)
-                    }
+                    await self.decideAfterAppleSignIn(session.user)
                 } catch {
                     await MainActor.run {
                         self.lastError = "Apple sign-in failed — \(error.localizedDescription) [\(diagnostic)]"
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Age gate (COPPA)
+
+    /// Message shown when a new account is refused on a device that already
+    /// answered under 13.
+    static let underAgeMessage = "Ask a parent, guardian or coach to set up the account."
+
+    private static func isAgeConfirmed(_ user: User) -> Bool {
+        if case .bool(true)? = user.userMetadata[AgeGate.metadataKey] { return true }
+        return false
+    }
+
+    /// After Supabase accepts the Apple token: grandfathered or already
+    /// confirmed accounts go straight in; a new account either answers the
+    /// age question or, on a device that already answered under 13, is
+    /// deleted again before anything else is stored.
+    private func decideAfterAppleSignIn(_ user: User) async {
+        let needsCheck = AgeGate.needsAgeCheck(
+            alreadyConfirmed: Self.isAgeConfirmed(user),
+            accountCreatedAt: user.createdAt
+        )
+        guard needsCheck else {
+            persistFromSupabaseUser(user)
+            return
+        }
+        if AgeGateStore.shared.isBlocked {
+            await discardUnconfirmedAccount()
+            lastError = Self.underAgeMessage
+            return
+        }
+        beginAgeCheck(for: user)
+    }
+
+    private func beginAgeCheck(for user: User) {
+        pendingAgeUser = user
+        pendingAgeCheck = true
+        UserDefaults.standard.set(user.id.uuidString, forKey: Self.pendingAgeUserDefaultsKey)
+    }
+
+    private func endAgeCheck() {
+        pendingAgeUser = nil
+        pendingAgeCheck = false
+        UserDefaults.standard.removeObject(forKey: Self.pendingAgeUserDefaultsKey)
+    }
+
+    /// Answer from the neutral age form for a pending Apple account.
+    func resolvePendingAgeCheck(isOldEnough: Bool) {
+        guard pendingAgeCheck else { return }
+        if isOldEnough {
+            let user = pendingAgeUser
+            endAgeCheck()
+            Task {
+                try? await SupabaseService.client.auth.update(
+                    user: UserAttributes(data: [AgeGate.metadataKey: .bool(true)])
+                )
+                let fresh = (try? await SupabaseService.client.auth.session)?.user ?? user
+                if let fresh { self.persistFromSupabaseUser(fresh) }
+            }
+        } else {
+            AgeGateStore.shared.recordBlocked()
+            Task {
+                await self.discardUnconfirmedAccount()
+                self.endAgeCheck()
+            }
+        }
+    }
+
+    /// The person backed out of the age question: the account was created
+    /// moments ago by this sign-in and never confirmed, so remove it.
+    func cancelPendingAgeCheck() {
+        guard pendingAgeCheck else { return }
+        Task {
+            await self.discardUnconfirmedAccount()
+            self.endAgeCheck()
+        }
+    }
+
+    /// Deletes the just-created, unconfirmed account server-side (same
+    /// delete-user function as Delete Account) and signs out locally.
+    private func discardUnconfirmedAccount() async {
+        isLoading = true
+        defer { isLoading = false }
+        try? await callDeleteUserFunction()
+        try? await SupabaseService.client.auth.signOut()
+        clearLocalSession()
+    }
+
+    /// Best-effort server copy of the one-time upload confirmation.
+    func recordUploadAttestation() {
+        UploadAttestation.recordAttested(userId: currentUser?.identifier)
+        #if DEBUG
+        if UITestSupport.isUITestRun { return }
+        #endif
+        Task {
+            try? await SupabaseService.client.auth.update(
+                user: UserAttributes(data: [UploadAttestation.metadataKey: .bool(true)])
+            )
         }
     }
 
@@ -262,6 +385,12 @@ final class AuthStore: ObservableObject {
             lastError = "Enter a display name."
             return
         }
+        // The sign-up form only reaches here after the neutral age question
+        // was answered 13+; a device that answered under 13 never signs up.
+        guard !AgeGateStore.shared.isBlocked else {
+            lastError = Self.underAgeMessage
+            return
+        }
         isLoading = true
         Task {
             defer { Task { @MainActor in self.isLoading = false } }
@@ -269,7 +398,10 @@ final class AuthStore: ObservableObject {
                 let response = try await SupabaseService.client.auth.signUp(
                     email: cleaned,
                     password: password,
-                    data: ["display_name": .string(trimmedName)]
+                    data: [
+                        "display_name": .string(trimmedName),
+                        AgeGate.metadataKey: .bool(true),
+                    ]
                 )
                 if let session = response.session {
                     await MainActor.run { self.persistFromSupabaseUser(session.user) }

@@ -165,6 +165,11 @@ only stable hooks XCUITest has against SwiftUI:
 | Counting stats chevron | `toggleCountingStats`          |
 | Stat cell value      | `statValue-<AVG|OBP|SLG|OPS|H|HR|RBI|AB|2B|3B|BB|K|SB|GO|FO|LO>` |
 | Stat cell label      | `statLabel-<…>`                  |
+| Age question         | `ageGateContinueButton` (+ two picker wheels: Month, Year) |
+| Under-13 screen      | `ageBlockedTitle`, `ageBlockedSignInButton` |
+| Email sheet          | `emailAuthModeToggle`, `emailAuthSubmitButton` |
+| Upload confirmation  | `attachSwingButton`, `uploadAttestationTitle` / `Confirm` / `Cancel` |
+| Privacy links        | `authPrivacyLink`, `paywallPrivacyLink`, `ageBlockedPrivacyLink` |
 
 ---
 
@@ -238,6 +243,36 @@ with its own sandbox Apple ID, so the window must be open during review.
   keychain (`supabase-pat-clockin`), same as `scripts/run_sql_tests.py`.
 - Tests: `python3 -m unittest discover -s scripts/tests` (offline, in CI) and
   `supabase/tests/sql/sandbox_review_window.test.sql` (live, rolled back).
+
+---
+
+## ⚑ Rule #1d: CHILD PRIVACY (COPPA) — added 2026-11-07
+
+Barrel is used for 9–12-year-old teams, so it is built around "adults (or
+players 13+) hold the account; children under 13 never do".
+
+- **Privacy policy = `PRIVACY.md` on main**, served at
+  https://github.com/divinedavis/Baseball-Stat-Tracker/blob/main/PRIVACY.md.
+  Every in-app link uses `LegalLinks.privacyPolicy`; ASC privacyPolicyUrl
+  (both locales) points there. Never move it to divinedavis.com. Update the
+  policy in the same commit as any change to what is collected.
+- **Neutral age question** (`Privacy/AgeGate.swift`, `AgeGateViews.swift`):
+  birth month + year, nothing pre-selected, before email sign-up and before a
+  NEW Sign in with Apple account is used (accounts created before
+  `AgeGate.gateLaunchDate` are grandfathered). Under 13 → no account, the
+  block is stored in UserDefaults + Keychain (survives reinstall) and a
+  just-created Apple account is deleted via `delete-user`. Only the flag
+  `age_confirmed_13_plus` goes to Supabase user_metadata — never the date.
+- **Upload confirmation**: before the first swing upload per account
+  (`UploadAttestation`, user_metadata `media_upload_attested`).
+- **App Privacy label**: the public ASC API cannot read or write it.
+  `scripts/asc_push_privacy_iris.py` publishes it through iris after the
+  owner runs `fastlane spaceauth -u divinejdavis@gmail.com` (2FA). The
+  old "No Data Collected" publish in `asc_finalize_submission.py` is gone.
+- **Submitting**: `scripts/asc_ship_version.py --build N` sets What's New
+  from `scripts/release_notes/<version>.<locale>.txt`, review notes from
+  `scripts/review_notes.txt`, AFTER_APPROVAL with no phased release,
+  attaches the build and submits.
 
 ---
 

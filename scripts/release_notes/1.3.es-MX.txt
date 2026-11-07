@@ -1,0 +1,7 @@
+Barrel ahora pide el mes y el año de nacimiento antes de crear una cuenta nueva. Las cuentas de Barrel son para padres, tutores, entrenadores y jugadores de 13 años o más, así que a los jugadores más jóvenes les pedimos que un adulto cree la cuenta.
+
+Antes de subir tu primera foto o video de swing, Barrel te pide confirmar que eres el jugador (de 13 años o más) o su padre, madre, tutor o entrenador con permiso para subirlo.
+
+El enlace a la Política de privacidad ahora abre nuestra política completa. Explica qué recopilamos, cómo se borran las fotos y videos de swing justo después del análisis y cómo un padre puede pedirnos que borremos la información de su hijo.
+
+Los límites de los planes de IA ahora se describen con precisión y los análisis de swing se cuentan de forma más confiable.

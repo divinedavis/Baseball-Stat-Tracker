@@ -1,0 +1,23 @@
+REVIEW NOTES - Barrel
+
+Sign-in: "Continue with Apple" uses the reviewer's Apple ID, or "Continue with email", then "Don't have an account? Sign up" to register fresh. No demo account is needed.
+
+AGE QUESTION (new in 1.3): before a new account is created, the app asks for a birth month and year with nothing pre-selected. Choose any month and a year at least 14 years ago to continue. An answer under 13 does not create an account; the app shows a screen asking for a parent, guardian or coach to set it up and remembers that answer on the device (only "Parent or coach sign in" for an existing account remains). The answer never leaves the device.
+
+BASE APP (free):
+1. Tap "+" to add a player.
+2. Record at-bats with +1B / +2B / etc.
+3. The 3-dot menu offers "Add another game" and "Reset all stats".
+
+BARREL AI ($9.99 / $24.99 monthly):
+1. Profile icon (top-left) > "Use AI" opens the paywall (prices, Restore Purchases, Privacy Policy and Terms links).
+2. Subscribe with your sandbox Apple ID; the sandbox purchase window is open for review.
+3. The AI tab appears at the bottom alongside Players.
+4. Paperclip > a one-time confirmation appears first (you are the player and 13+, or the player's parent, guardian or coach with permission). Tap "I confirm", then pick a swing photo or video, or just type a question.
+5. The server politely rejects non-baseball uploads.
+
+INSIGHTS (paid): open any player > 3-dot menu > Insights.
+
+ACCOUNT DELETION: profile icon > Delete Account > Delete. This removes the account, swing media, AI history and subscription records on our server and the roster on the device.
+
+Privacy: rosters and at-bat data stay on the device. Swing media is sent to Anthropic's Claude API via Supabase Edge Functions for feedback and deleted from storage as soon as the analysis finishes. Privacy Policy: https://github.com/divinedavis/Baseball-Stat-Tracker/blob/main/PRIVACY.md

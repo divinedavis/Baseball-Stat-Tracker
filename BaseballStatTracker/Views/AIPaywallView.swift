@@ -115,11 +115,10 @@ struct AIPaywallView: View {
                     Task { await billing.restore() }
                 }
                 .font(.footnote)
-                Link("Privacy",
-                     destination: URL(string: "https://github.com/divinedavis/Baseball-Stat-Tracker#privacy")!)
+                Link("Privacy Policy", destination: LegalLinks.privacyPolicy)
                     .font(.footnote)
-                Link("Terms (EULA)",
-                     destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                    .accessibilityIdentifier("paywallPrivacyLink")
+                Link("Terms (EULA)", destination: LegalLinks.termsOfUse)
                     .font(.footnote)
             }
         }

@@ -3,6 +3,7 @@ import AuthenticationServices
 
 struct AuthView: View {
     @EnvironmentObject private var auth: AuthStore
+    @ObservedObject private var ageGate = AgeGateStore.shared
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("appLanguage") private var languageRaw: String = ""
 
@@ -32,10 +33,32 @@ struct AuthView: View {
         .overlay(alignment: .topTrailing) { languageToggle }
         .onAppear { startRotation() }
         .sheet(isPresented: $showEmailSheet) {
-            EmailAuthSheet()
+            EmailAuthSheet(allowSignUp: !ageGate.isBlocked)
                 .environmentObject(auth)
                 .environment(\.colorScheme, .light)
                 .presentationCornerRadius(28)
+        }
+        // A brand-new Sign in with Apple account answers the neutral age
+        // question before it is used (AuthStore.pendingAgeCheck).
+        .sheet(isPresented: Binding(
+            get: { auth.pendingAgeCheck },
+            set: { presented in if !presented { auth.cancelPendingAgeCheck() } }
+        )) {
+            ZStack {
+                Color.white.ignoresSafeArea()
+                ScrollView {
+                    AgeGateForm(
+                        onAnswer: { auth.resolvePendingAgeCheck(isOldEnough: $0) },
+                        onCancel: { auth.cancelPendingAgeCheck() },
+                        ink: Color(red: 0.10, green: 0.10, blue: 0.12)
+                    )
+                    .padding(.horizontal, 28)
+                    .padding(.top, 24)
+                }
+            }
+            .environment(\.colorScheme, .light)
+            .interactiveDismissDisabled()
+            .presentationCornerRadius(28)
         }
     }
 
@@ -113,7 +136,53 @@ struct AuthView: View {
         }
     }
 
+    @ViewBuilder
     private var lowerCard: some View {
+        if ageGate.isBlocked {
+            blockedCard
+        } else {
+            signUpCard
+        }
+    }
+
+    private var blockedCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            AgeBlockedView(
+                onParentSignIn: {
+                    auth.clearError()
+                    showEmailSheet = true
+                },
+                appleSignIn: AnyView(appleButton(.signIn))
+            )
+            if let err = auth.lastError {
+                Text(err)
+                    .font(.footnote)
+                    .foregroundStyle(.white)
+            }
+        }
+        .padding(.horizontal, 28)
+        .padding(.top, 24)
+        .padding(.bottom, 44)
+    }
+
+    private func appleButton(_ label: SignInWithAppleButton.Label) -> some View {
+        SignInWithAppleButton(
+            label,
+            onRequest: { req in
+                auth.clearError()
+                req.requestedScopes = [.fullName, .email]
+                req.nonce = auth.appleNonce()
+            },
+            onCompletion: { result in
+                auth.handleAppleAuthorization(result)
+            }
+        )
+        .signInWithAppleButtonStyle(.white)
+        .frame(height: 54)
+        .clipShape(Capsule())
+    }
+
+    private var signUpCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Every at-bat,\ntracked.")
                 .font(.system(size: 32, weight: .bold))
@@ -128,20 +197,7 @@ struct AuthView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 8)
 
-            SignInWithAppleButton(
-                .continue,
-                onRequest: { req in
-                    auth.clearError()
-                    req.requestedScopes = [.fullName, .email]
-                    req.nonce = auth.appleNonce()
-                },
-                onCompletion: { result in
-                    auth.handleAppleAuthorization(result)
-                }
-            )
-            .signInWithAppleButtonStyle(.white)
-            .frame(height: 54)
-            .clipShape(Capsule())
+            appleButton(.continue)
 
             Button {
                 auth.clearError()
@@ -166,6 +222,11 @@ struct AuthView: View {
                     .foregroundStyle(.white)
                     .padding(.top, 4)
             }
+
+            Link("Privacy Policy", destination: LegalLinks.privacyPolicy)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.9))
+                .accessibilityIdentifier("authPrivacyLink")
         }
         .padding(.horizontal, 28)
         .padding(.top, 24)
@@ -202,6 +263,11 @@ private struct HeroIcon: View {
 private struct EmailAuthSheet: View {
     @EnvironmentObject private var auth: AuthStore
     @Environment(\.dismiss) private var dismiss
+    /// False once this device answered the age question under 13: the sheet
+    /// is then sign-in only, for a parent or coach with an existing account.
+    var allowSignUp: Bool = true
+    /// The neutral age question has been answered 13+ in this sheet.
+    @State private var ageConfirmed = false
 
     enum Mode { case signIn, signUp }
     @State private var mode: Mode = .signIn
@@ -225,6 +291,34 @@ private struct EmailAuthSheet: View {
             canvas.ignoresSafeArea()
 
             ScrollView {
+                if mode == .signUp && !ageConfirmed {
+                    AgeGateForm(
+                        onAnswer: { oldEnough in
+                            if oldEnough {
+                                ageConfirmed = true
+                            } else {
+                                AgeGateStore.shared.recordBlocked()
+                                dismiss()
+                            }
+                        },
+                        onCancel: {
+                            mode = .signIn
+                            auth.clearError()
+                        },
+                        ink: ink
+                    )
+                    .padding(.horizontal, 28)
+                    .padding(.top, 20)
+                } else {
+                    form
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private var form: some View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Button {
@@ -339,7 +433,9 @@ private struct EmailAuthSheet: View {
                     .disabled(!canSubmit)
                     .opacity(canSubmit ? 1 : 0.4)
                     .padding(.top, 8)
+                    .accessibilityIdentifier("emailAuthSubmitButton")
 
+                    if allowSignUp {
                     HStack {
                         Spacer()
                         Button {
@@ -356,17 +452,15 @@ private struct EmailAuthSheet: View {
                                 .foregroundStyle(ink.opacity(0.6))
                                 .underline()
                         }
+                        .accessibilityIdentifier("emailAuthModeToggle")
                         Spacer()
                     }
                     .padding(.top, 20)
                     .padding(.bottom, 40)
+                    }
                 }
                 .padding(.horizontal, 28)
                 .padding(.top, 20)
-            }
-        }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
     }
 
     private var canSubmit: Bool {

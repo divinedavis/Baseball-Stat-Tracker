@@ -8,7 +8,7 @@ struct MainTabView: View {
 
     var body: some View {
         Group {
-            if billing.tier == .free {
+            if billing.tier == .free && !Self.forceAITab {
                 RootView()
             } else {
                 TabView {
@@ -26,5 +26,15 @@ struct MainTabView: View {
         .task {
             await billing.refreshEntitlements()
         }
+    }
+
+    /// XCUITest hook (`-uiTestAITab`): show the AI tab without a purchase so
+    /// the upload-attestation flow can be exercised. Always false in Release.
+    private static var forceAITab: Bool {
+        #if DEBUG
+        return CommandLine.arguments.contains("-uiTestAITab")
+        #else
+        return false
+        #endif
     }
 }

@@ -12,6 +12,9 @@ import UIKit
 ///     that want pre-existing roster state to survive between launches.
 ///   - `-uiTestSignedOut` : reset like `-uiTestReset` but also clear the
 ///     Keychain session so the app launches into the auth screen.
+///   Both resets also forget the under-13 age block unless
+///   `-uiTestKeepAgeGate` is passed too. `-uiTestAITab` shows the AI tab
+///   without a subscription (MainTabView).
 enum UITestSupport {
     static var isUITestRun: Bool {
         let args = CommandLine.arguments
@@ -38,6 +41,15 @@ enum UITestSupport {
         wipeDocuments()
         wipeUserDefaults()
         if signedOut { wipeAuthSession() }
+        // `-uiTestKeepAgeGate` lets a test relaunch and prove an under-13
+        // answer is remembered; every other reset starts with no block.
+        if !args.contains("-uiTestKeepAgeGate") { wipeAgeGate() }
+    }
+
+    private static func wipeAgeGate() {
+        UserDefaults.standard.removeObject(forKey: "barrel.ageGate.blocked")
+        UserDefaults.standard.removeObject(forKey: "barrel.ageGate.pendingUserId")
+        KeychainStore.delete(account: "agegate.blocked")
     }
 
     private static func wipeAuthSession() {

@@ -1,0 +1,7 @@
+Barrel now asks for a birth month and year before a new account is created. Barrel accounts are for parents, guardians, coaches and players 13 and older, so younger players are asked to have a grown-up set up the account.
+
+Before your first swing photo or video upload, Barrel asks you to confirm that you are the player (13 or older) or the player's parent, guardian or coach with permission to upload it.
+
+The Privacy Policy link now opens our full policy. It explains what we collect, how swing photos and videos are deleted right after analysis, and how a parent can ask us to delete a child's information.
+
+AI plan limits are now described accurately, and swing analyses are counted more reliably.

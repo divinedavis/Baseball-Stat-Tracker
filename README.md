@@ -4,7 +4,7 @@
 
 # BARREL
 
-**Find the sweet spot.** One-tap at-bat logger for coaches, parents, and players. Live AVG / OBP / SLG / OPS — offline, no account, no noise.
+**Find the sweet spot.** One-tap at-bat logger for coaches, parents, and players. Live AVG / OBP / SLG / OPS — stats stay on your phone, no noise.
 
 <a href="https://apps.apple.com/app/id6762527182">
   <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="56" />
@@ -19,3 +19,7 @@
 <img src="docs/screenshots/empty-state.png" width="240" alt="At-bat pad" />
 
 </div>
+
+## Privacy
+
+Read the full [Privacy Policy](PRIVACY.md) ([direct link](https://github.com/divinedavis/Baseball-Stat-Tracker/blob/main/PRIVACY.md)). In short: rosters and at-bats stay on your phone; swing photos and videos you choose to analyze go to our AI provider and are deleted from our storage as soon as the analysis finishes (anything left behind is removed within 30 days); and Barrel is not for children under 13 to create their own accounts. A parent, guardian or coach sets the account up, and anyone can delete their account and data from the profile menu. Questions or deletion requests: divinejdavis@gmail.com.

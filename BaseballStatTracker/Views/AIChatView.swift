@@ -17,6 +17,14 @@ struct AIChatView: View {
     @State private var error: String?
     @State private var showingPicker = false
     @State private var pickerItem: PhotosPickerItem?
+    @State private var showingAttestation = false
+    @State private var openPickerAfterAttestation = false
+
+    /// The one-time "I'm the player (13+) or their parent/guardian/coach
+    /// with permission" confirmation has been given for this account.
+    private var hasAttested: Bool {
+        UploadAttestation.hasAttested(userId: auth.currentUser?.identifier)
+    }
 
     @FocusState private var inputFocused: Bool
 
@@ -45,6 +53,28 @@ struct AIChatView: View {
         .onChange(of: pickerItem) { _, item in
             guard let item else { return }
             Task { await loadAttachment(from: item) }
+        }
+        .photosPicker(
+            isPresented: $showingPicker,
+            selection: $pickerItem,
+            matching: .any(of: [.images, .videos]),
+            photoLibrary: .shared()
+        )
+        .sheet(isPresented: $showingAttestation, onDismiss: {
+            if openPickerAfterAttestation {
+                openPickerAfterAttestation = false
+                showingPicker = true
+            }
+        }) {
+            UploadAttestationSheet(
+                onConfirm: {
+                    auth.recordUploadAttestation()
+                    EventLogger.shared.log("upload_attestation_confirmed", properties: [:])
+                    openPickerAfterAttestation = true
+                    showingAttestation = false
+                },
+                onCancel: { showingAttestation = false }
+            )
         }
     }
 
@@ -111,16 +141,21 @@ struct AIChatView: View {
                 .padding(.horizontal, 12)
             }
             HStack(spacing: 8) {
-                PhotosPicker(
-                    selection: $pickerItem,
-                    matching: .any(of: [.images, .videos]),
-                    photoLibrary: .shared()
-                ) {
+                Button {
+                    inputFocused = false
+                    if hasAttested {
+                        showingPicker = true
+                    } else {
+                        showingAttestation = true
+                    }
+                } label: {
                     Image(systemName: "paperclip")
                         .font(.title3)
                         .foregroundStyle(.secondary)
                         .frame(width: 36, height: 36)
                 }
+                .accessibilityLabel("Attach a swing photo or video")
+                .accessibilityIdentifier("attachSwingButton")
 
                 TextField("Message", text: $draft, axis: .vertical)
                     .textFieldStyle(.plain)
@@ -170,6 +205,11 @@ struct AIChatView: View {
     private func send() {
         let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSend else { return }
+        // Never upload swing media without the one-time confirmation.
+        if attachment != nil && !hasAttested {
+            showingAttestation = true
+            return
+        }
         sending = true
         error = nil
         let outgoing: ChatItem
