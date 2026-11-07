@@ -272,7 +272,10 @@ players 13+) hold the account; children under 13 never do".
 - **Submitting**: `scripts/asc_ship_version.py --build N` sets What's New
   from `scripts/release_notes/<version>.<locale>.txt`, review notes from
   `scripts/review_notes.txt`, AFTER_APPROVAL with no phased release,
-  attaches the build and submits.
+  attaches the build and submits. It also appends the Terms of Use (EULA)
+  and Privacy Policy links to each description (3.1.2). If adding the
+  version to a submission 409s on ageRatingDeclarations `socialMedia`,
+  run `scripts/asc_set_age_rating.py` (Apple made that answer required).
 
 ---
 

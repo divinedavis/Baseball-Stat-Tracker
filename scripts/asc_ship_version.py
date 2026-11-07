@@ -6,7 +6,9 @@ Steps (each idempotent):
   1. Find the App Store version (default: MARKETING_VERSION in project.yml).
   2. Set "What's New" per locale from scripts/release_notes/<version>.<locale>.txt
      (passed through as_paragraphs: plain paragraphs, never bullets).
-  3. Set the App Review notes from scripts/review_notes.txt.
+  3. Set the App Review notes from scripts/review_notes.txt, and make sure
+     each description ends with the Terms of Use (Apple EULA) and Privacy
+     Policy links (auto-renewing subscriptions: guideline 3.1.2).
   4. releaseType = AFTER_APPROVAL and delete any phased release, so the
      approved version reaches everyone at once.
   5. Attach build N (must be VALID).
@@ -86,6 +88,37 @@ def set_review_notes(version_id, token, dry):
     print(f"  ✓ review notes set ({len(notes)} chars)")
 
 
+EULA = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+PRIVACY = "https://github.com/divinedavis/Baseball-Stat-Tracker/blob/main/PRIVACY.md"
+LEGAL_FOOTER = {
+    "en-US": f"Terms of Use (EULA): {EULA}\nPrivacy Policy: {PRIVACY}",
+    "es-MX": f"Términos de uso (EULA): {EULA}\nPolítica de privacidad: {PRIVACY}",
+}
+
+
+def ensure_legal_links(version_id, token, dry):
+    d = must(*api("GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionLocalizations", token),
+             "list version localizations")
+    for loc in d.get("data", []):
+        locale = loc["attributes"]["locale"]
+        desc = (loc["attributes"].get("description") or "").rstrip()
+        if "stdeula" in desc and PRIVACY in desc:
+            print(f"  ✓ {locale} description already links Terms + Privacy")
+            continue
+        footer = LEGAL_FOOTER.get(locale, LEGAL_FOOTER["en-US"])
+        new = f"{desc}\n\n{footer}" if desc else footer
+        if len(new) > 4000:
+            raise SystemExit(f"{locale} description would exceed 4000 chars")
+        if dry:
+            print(f"  [dry] {locale} description += legal links")
+            continue
+        body = {"data": {"type": "appStoreVersionLocalizations", "id": loc["id"],
+                         "attributes": {"description": new}}}
+        must(*api("PATCH", f"/v1/appStoreVersionLocalizations/{loc['id']}", token, body),
+             f"patch description {locale}")
+        print(f"  ✓ {locale} description now ends with Terms of Use + Privacy Policy links")
+
+
 def release_all_at_once(version_id, token, dry):
     if dry:
         print("  [dry] releaseType=AFTER_APPROVAL, delete any phased release")
@@ -134,6 +167,8 @@ def main():
     set_whats_new(vid, version, token, dry)
     print("\n▸ review notes")
     set_review_notes(vid, token, dry)
+    print("\n▸ legal links in description")
+    ensure_legal_links(vid, token, dry)
     print("\n▸ release type")
     release_all_at_once(vid, token, dry)
 

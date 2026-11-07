@@ -41,6 +41,10 @@ TARGET_ATTRS = {
     # EIGHTEEN_PLUS / UNRATED. THIRTEEN_PLUS replaces the old "12+" band and
     # matches our PRIVACY.md minimum age (13).
     "ageRatingOverrideV2": "THIRTEEN_PLUS",
+    # Required since late 2026 or the version can't be added to a review
+    # submission (409 ENTITY_ERROR.ATTRIBUTE.REQUIRED socialMedia). Barrel has
+    # no user-to-user sharing, profiles or messaging; AI chat is private.
+    "socialMedia": False,
 }
 
 
