@@ -10,6 +10,12 @@ enum ReviewPrompter {
     /// that way a user who dismisses the sheet doesn't get re-prompted on every
     /// subsequent game.
     static func maybeRequestReview(gamesLogged: Int) {
+        #if DEBUG
+        // The system rating sheet covers the player detail screen and makes
+        // every at-bat button "not hittable" in XCUITest (threshold is 1
+        // game since 38c761c, and the seeded rosters already count).
+        if UITestSupport.isUITestRun { return }
+        #endif
         let defaults = UserDefaults.standard
         guard !defaults.bool(forKey: promptedKey) else { return }
         guard gamesLogged >= gameThreshold else { return }

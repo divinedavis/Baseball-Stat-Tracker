@@ -10,6 +10,7 @@
 #   --unit-only       skip the XCUITest target (faster — under a second)
 #   --ui-only         skip the unit target
 #   --device <name>   override the simulator name
+#   SIM_ID=<udid>     env: pin one exact simulator (wins over --device)
 #   --verbose         echo full xcodebuild output
 #
 # Exit code matches xcodebuild — non-zero if any test fails.
@@ -44,10 +45,18 @@ if [[ project.yml -nt BaseballStatTracker.xcodeproj/project.pbxproj ]]; then
     xcodegen generate >/dev/null
 fi
 
+if [[ -n "${SIM_ID:-}" ]]; then
+    DESTINATION="platform=iOS Simulator,id=$SIM_ID"
+    SIM_TARGET="$SIM_ID"
+else
+    DESTINATION="platform=iOS Simulator,name=$DEVICE"
+    SIM_TARGET="$DEVICE"
+fi
+
 XCB_FLAGS=(
     -project BaseballStatTracker.xcodeproj
     -scheme BaseballStatTracker
-    -destination "platform=iOS Simulator,name=$DEVICE"
+    -destination "$DESTINATION"
     -configuration Debug
 )
 
@@ -93,9 +102,10 @@ fi
 if [[ "$RUN_UI" -eq 1 ]]; then
     info "first attempt failed — cold-rebooting the simulator and retrying"
     pkill -f "BaseballStatTrackerUITests" 2>/dev/null || true
-    xcrun simctl shutdown all >/dev/null 2>&1 || true
+    # Only our own simulator: other sessions on this Mac may be using theirs.
+    xcrun simctl shutdown "$SIM_TARGET" >/dev/null 2>&1 || true
     sleep 2
-    xcrun simctl boot "$DEVICE" >/dev/null 2>&1 || true
+    xcrun simctl boot "$SIM_TARGET" >/dev/null 2>&1 || true
     if run_xcodebuild_test; then
         info "✓ all tests passed (after retry)"
         exit 0

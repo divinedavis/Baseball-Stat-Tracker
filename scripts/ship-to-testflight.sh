@@ -203,7 +203,9 @@ cat > "$EXPORT_OPTS" <<EOF
 EOF
 
 info "exporting"
-xcodebuild -exportArchive \
+# System PATH on purpose: Homebrew rsync 3.x first on PATH breaks Xcode's
+# IPA export ("Copy failed" — it rejects openrsync's -E flag).
+PATH=/usr/bin:/bin:/usr/sbin:/sbin xcodebuild -exportArchive \
     -archivePath "$ARCHIVE" \
     -exportOptionsPlist "$EXPORT_OPTS" \
     -exportPath "$EXPORT_DIR" \
