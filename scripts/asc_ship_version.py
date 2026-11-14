@@ -45,12 +45,56 @@ def marketing_version() -> str:
     return m.group(1)
 
 
-def find_version(app_id, version, token):
+def find_version(app_id, version, token, dry=False):
+    """The App Store version, created when App Store Connect does not have it yet."""
     d = must(*api("GET", f"/v1/apps/{app_id}/appStoreVersions?limit=20", token), "list versions")
     for v in d.get("data", []):
         if v["attributes"].get("versionString") == version:
             return v
-    raise SystemExit(f"App Store version {version} not found")
+    if dry:
+        raise SystemExit(f"[dry] App Store version {version} does not exist yet; a real run creates it")
+    body = {"data": {"type": "appStoreVersions",
+                     "attributes": {"platform": "IOS", "versionString": version},
+                     "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}}
+    created = must(*api("POST", "/v1/appStoreVersions", token, body), f"create version {version}")
+    print(f"  ✓ created App Store version {version}")
+    return created["data"]
+
+
+def set_listing_urls(app_id, version_id, token, dry):
+    """Support, marketing and privacy-policy addresses, every locale."""
+    d = must(*api("GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionLocalizations", token),
+             "list version localizations")
+    for loc in d.get("data", []):
+        a, locale = loc["attributes"], loc["attributes"]["locale"]
+        if a.get("supportUrl") == SUPPORT and a.get("marketingUrl") == SUPPORT:
+            print(f"  ✓ {locale} support + marketing URL already set")
+            continue
+        if dry:
+            print(f"  [dry] {locale} support + marketing URL -> {SUPPORT}")
+            continue
+        body = {"data": {"type": "appStoreVersionLocalizations", "id": loc["id"],
+                         "attributes": {"supportUrl": SUPPORT, "marketingUrl": SUPPORT}}}
+        must(*api("PATCH", f"/v1/appStoreVersionLocalizations/{loc['id']}", token, body), f"patch URLs {locale}")
+        print(f"  ✓ {locale} support + marketing URL -> {SUPPORT}")
+    infos = must(*api("GET", f"/v1/apps/{app_id}/appInfos", token), "list app infos").get("data", [])
+    # The editable app info is the one that is not live yet.
+    editable = [i for i in infos if (i["attributes"].get("state") or i["attributes"].get("appStoreState"))
+                not in ("READY_FOR_DISTRIBUTION", "READY_FOR_SALE")] or infos
+    for info in editable:
+        locs = must(*api("GET", f"/v1/appInfos/{info['id']}/appInfoLocalizations", token), "list app info localizations")
+        for loc in locs.get("data", []):
+            locale = loc["attributes"]["locale"]
+            if loc["attributes"].get("privacyPolicyUrl") == PRIVACY:
+                print(f"  ✓ {locale} privacy policy URL already set")
+                continue
+            if dry:
+                print(f"  [dry] {locale} privacy policy URL -> {PRIVACY}")
+                continue
+            body = {"data": {"type": "appInfoLocalizations", "id": loc["id"],
+                             "attributes": {"privacyPolicyUrl": PRIVACY}}}
+            must(*api("PATCH", f"/v1/appInfoLocalizations/{loc['id']}", token, body), f"patch privacy URL {locale}")
+            print(f"  ✓ {locale} privacy policy URL -> {PRIVACY}")
 
 
 def set_whats_new(version_id, version, token, dry):
@@ -89,7 +133,10 @@ def set_review_notes(version_id, token, dry):
 
 
 EULA = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
-PRIVACY = "https://github.com/divinedavis/Baseball-Stat-Tracker/blob/main/PRIVACY.md"
+PRIVACY = "https://divinedavis.com/barrel/privacy/"
+SUPPORT = "https://divinedavis.com/barrel/support/"
+# Where the policy lived until 1.3.1; replaced wherever a description still has it.
+OLD_PRIVACY = "https://github.com/divinedavis/Baseball-Stat-Tracker/blob/main/PRIVACY.md"
 LEGAL_FOOTER = {
     "en-US": f"Terms of Use (EULA): {EULA}\nPrivacy Policy: {PRIVACY}",
     "es-MX": f"Términos de uso (EULA): {EULA}\nPolítica de privacidad: {PRIVACY}",
@@ -101,12 +148,16 @@ def ensure_legal_links(version_id, token, dry):
              "list version localizations")
     for loc in d.get("data", []):
         locale = loc["attributes"]["locale"]
-        desc = (loc["attributes"].get("description") or "").rstrip()
-        if "stdeula" in desc and PRIVACY in desc:
+        current = (loc["attributes"].get("description") or "").rstrip()
+        desc = current.replace(OLD_PRIVACY, PRIVACY)
+        if "stdeula" in desc and PRIVACY in desc and desc == current:
             print(f"  ✓ {locale} description already links Terms + Privacy")
             continue
         footer = LEGAL_FOOTER.get(locale, LEGAL_FOOTER["en-US"])
-        new = f"{desc}\n\n{footer}" if desc else footer
+        if "stdeula" in desc and PRIVACY in desc:
+            new = desc                       # only the old policy address needed replacing
+        else:
+            new = f"{desc}\n\n{footer}" if desc else footer
         if len(new) > 4000:
             raise SystemExit(f"{locale} description would exceed 4000 chars")
         if dry:
@@ -159,7 +210,7 @@ def main():
     app_id = env["ASC_APP_ID"]
     dry = args.dry_run
 
-    v = find_version(app_id, version, token)
+    v = find_version(app_id, version, token, dry)
     vid = v["id"]
     print(f"▸ version {version} id={vid} state={v['attributes'].get('appStoreState')}")
 
@@ -169,6 +220,8 @@ def main():
     set_review_notes(vid, token, dry)
     print("\n▸ legal links in description")
     ensure_legal_links(vid, token, dry)
+    print("\n▸ support, marketing and privacy URLs")
+    set_listing_urls(app_id, vid, token, dry)
     print("\n▸ release type")
     release_all_at_once(vid, token, dry)
 

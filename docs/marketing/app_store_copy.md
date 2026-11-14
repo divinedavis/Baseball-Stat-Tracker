@@ -56,10 +56,10 @@ barrel,baseball,stats,tracker,at-bat,batting,average,coach,softball,ops,slg,obp,
 ---
 
 ## Support URL
-https://github.com/divinedavis/Baseball-Stat-Tracker
+https://divinedavis.com/barrel/support/
 
 ## Marketing URL
-https://github.com/divinedavis/Baseball-Stat-Tracker
+https://divinedavis.com/barrel/support/
 
 ## Version
 1.0

@@ -72,8 +72,8 @@ COPY = {
         "Find the sweet spot. Train for impact. Track. Improve. Dominate."
     ),
     "keywords": "barrel,baseball,stats,tracker,at-bat,batting,average,coach,softball,ops,slg,obp,scorebook",
-    "supportUrl": "https://github.com/divinedavis/Baseball-Stat-Tracker",
-    "marketingUrl": "https://github.com/divinedavis/Baseball-Stat-Tracker",
+    "supportUrl": "https://divinedavis.com/barrel/support/",
+    "marketingUrl": "https://divinedavis.com/barrel/support/",
 }
 
 COPYRIGHT = "© 2026 Divine Davis"

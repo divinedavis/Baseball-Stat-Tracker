@@ -251,11 +251,17 @@ with its own sandbox Apple ID, so the window must be open during review.
 Barrel is used for 9–12-year-old teams, so it is built around "adults (or
 players 13+) hold the account; children under 13 never do".
 
-- **Privacy policy = `PRIVACY.md` on main**, served at
-  https://github.com/divinedavis/Baseball-Stat-Tracker/blob/main/PRIVACY.md.
-  Every in-app link uses `LegalLinks.privacyPolicy`; ASC privacyPolicyUrl
-  (both locales) points there. Never move it to divinedavis.com. Update the
-  policy in the same commit as any change to what is collected.
+- **Privacy policy = `PRIVACY.md` on main**, published at
+  https://divinedavis.com/barrel/privacy/ (support page:
+  https://divinedavis.com/barrel/support/). Owner, 2026-11-13: the links
+  moved off GitHub so this repository can be private; that decision replaces
+  the earlier "never move it to divinedavis.com". Builds up to 1.3 (78)
+  still link to the GitHub copy, so the repo stays public until 1.3.1 is
+  live. Every in-app link uses `LegalLinks.privacyPolicy`; ASC
+  privacyPolicyUrl, supportUrl and marketingUrl (both locales) are set by
+  `scripts/asc_ship_version.py`. Update the policy in the same commit as any
+  change to what is collected, then run `scripts/publish_privacy_page.py`
+  so the published page matches.
 - **Neutral age question** (`Privacy/AgeGate.swift`, `AgeGateViews.swift`):
   birth month + year, nothing pre-selected, before email sign-up and before a
   NEW Sign in with Apple account is used (accounts created before

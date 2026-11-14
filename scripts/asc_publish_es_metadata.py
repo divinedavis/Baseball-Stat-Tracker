@@ -81,8 +81,8 @@ VERSION_COPY = {
     # 100 char max, comma-separated, NO spaces. Don't repeat title/subtitle terms.
     # "pelota" is DR slang for baseball ("vamos a jugar pelota") — important inclusion.
     "keywords": "pelota,bateo,promedio,turno,jugador,coach,liga,juvenil,scorebook,softbol,ops,slg,obp",
-    "supportUrl": "https://github.com/divinedavis/Baseball-Stat-Tracker",
-    "marketingUrl": "https://github.com/divinedavis/Baseball-Stat-Tracker",
+    "supportUrl": "https://divinedavis.com/barrel/support/",
+    "marketingUrl": "https://divinedavis.com/barrel/support/",
     "whatsNew": (
         "Localización completa en español para usuarios de República Dominicana y toda Latinoamérica. "
         "Toca EN/ES en la pantalla de inicio para cambiar de idioma cuando quieras."
