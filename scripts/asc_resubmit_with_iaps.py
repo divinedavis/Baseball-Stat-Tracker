@@ -181,7 +181,11 @@ def find_or_create_submission(app_id, token, dry):
 
 
 def list_items(submission_id, token):
-    s, d = api("GET", f"/v1/reviewSubmissions/{submission_id}/items?limit=50", token)
+    # include=...: without it the relationships carry only links, never the
+    # ids, so "already attached" was never recognised and a second run failed
+    # with 409 on re-adding the version (found 2026-11-13).
+    s, d = api("GET", f"/v1/reviewSubmissions/{submission_id}/items?limit=50"
+                      "&include=appStoreVersion", token)
     must(s, d, "list submission items")
     return d.get("data", [])
 
